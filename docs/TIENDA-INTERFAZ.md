@@ -85,6 +85,23 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 - [ ] Mapa real con Leaflet y ubicaciones del repartidor
 - [ ] Cuentas de comprador (rol nuevo junto a `ADMIN` y `CASHIER`)
 
+## Publicación
+
+El sitio estático vive en la rama `gh-pages` y se sirve por GitHub Pages:
+
+**https://isairodriguez2025-hub.github.io/distribuidora-tienda/**
+
+Para regenerarlo después de cambiar la portada:
+
+```bash
+npm run dev                                   # puerto 3000
+python3 scripts/tienda-static-export.py       # genera dist-pages/
+# publicar: copiar dist-pages/ a la rama gh-pages y hacer push
+```
+
+El script incrusta el CSS, elimina el JavaScript de Next y reinyecta un JS
+mínimo para pestañas, carrito y buscador. No necesita Node en el servidor.
+
 ## Registro de cambios
 
 Cada commit de esta entrega está documentado en su mensaje y en la sección
