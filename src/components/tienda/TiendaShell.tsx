@@ -116,7 +116,7 @@ function Header() {
 
           <div className="t-header__actions">
             {buscar ? (
-              <label className="t-search t-hide-mobile">
+              <label className="t-search">
                 {Ico.search}
                 <input
                   ref={inputRef}
@@ -129,7 +129,7 @@ function Header() {
             ) : (
               <button
                 type="button"
-                className="t-iconbtn t-hide-mobile"
+                className="t-iconbtn"
                 aria-label="Buscar"
                 onClick={() => setBuscar(true)}
               >
@@ -245,6 +245,8 @@ export function TiendaShell({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       <div className="t-root">
+        <a href="#contenido" className="t-skip">Saltar al contenido</a>
+
         <div className="t-topbar">
           <div className="t-wrap">
             <span>Entregas en CDMX y zona metropolitana</span>
@@ -256,7 +258,7 @@ export function TiendaShell({ children }: { children: ReactNode }) {
         </div>
 
         <Header />
-        {children}
+        <main id="contenido">{children}</main>
         <Footer />
 
         <div className={`t-toast${toast ? ' is-on' : ''}`} role="status" aria-live="polite">
