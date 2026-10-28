@@ -192,10 +192,10 @@
   white-space: nowrap;
 }
 .t-btn:active { transform: scale(.985); }
-.t-btn--primary { background: var(--t-brand); color: #fff; box-shadow: 0 1px 2px rgba(14,81,52,.25); }
-.t-btn--primary:hover { background: var(--t-brand-2); }
-.t-btn--ghost { background: #fff; color: var(--t-ink); border: 1px solid var(--t-line-2); }
-.t-btn--ghost:hover { background: var(--t-surface); }
+.t-root .t-btn--primary { background: var(--t-brand); color: #fff; border: 1px solid var(--t-brand); box-shadow: 0 1px 2px rgba(14,81,52,.25); }
+.t-root .t-btn--primary:hover { background: var(--t-brand-2); border-color: var(--t-brand-2); }
+.t-root .t-btn--ghost { background: #fff; color: var(--t-ink); border: 1px solid var(--t-line-2); }
+.t-root .t-btn--ghost:hover { background: var(--t-surface); }
 .t-btn--sm { height: 36px; padding: 0 14px; font-size: 13px; border-radius: 9px; }
 .t-btn--wide { width: 100%; }
 
@@ -411,7 +411,7 @@
 
 /* ------------------------------ productos -------------------------------- */
 .t-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
-.t-tab {
+.t-root .t-tab {
   height: 36px;
   padding: 0 14px;
   border-radius: 999px;
@@ -422,8 +422,8 @@
   color: var(--t-ink-2);
   transition: all .15s;
 }
-.t-tab:hover { border-color: #c3c9c2; }
-.t-tab.is-active {
+.t-root .t-tab:hover { border-color: #c3c9c2; }
+.t-root .t-tab.is-active {
   background: var(--t-brand);
   border-color: var(--t-brand);
   color: #fff;
@@ -582,6 +582,174 @@
   gap: 20px; padding-top: 22px; font-size: 12.5px; color: #7e847f; flex-wrap: wrap;
 }
 
+/* ------------------------------ migas / sección -------------------------- */
+.t-crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--t-muted);
+  padding: 22px 0 0;
+  flex-wrap: wrap;
+}
+.t-crumb a:hover { color: var(--t-brand); text-decoration: underline; }
+.t-crumb span[aria-current] { color: var(--t-ink); font-weight: 500; }
+
+.t-sechero {
+  background: linear-gradient(180deg, #fbfaf7 0%, #ffffff 100%);
+  border-bottom: 1px solid var(--t-line);
+  padding-bottom: 40px;
+}
+.t-sechero__grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 48px;
+  align-items: end;
+  padding-top: 26px;
+}
+.t-sechero h1 {
+  font-size: 42px;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  font-weight: 700;
+}
+.t-sechero p {
+  margin-top: 14px;
+  font-size: 16.5px;
+  color: var(--t-ink-2);
+  max-width: 58ch;
+}
+.t-sechero__meta {
+  display: flex;
+  gap: 34px;
+  padding-bottom: 6px;
+}
+.t-sechero__meta b {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--t-brand);
+  font-variant-numeric: tabular-nums;
+}
+.t-sechero__meta span { font-size: 13px; color: var(--t-muted); }
+
+/* ------------------------------ otras secciones -------------------------- */
+.t-otras { margin-top: 64px; padding-top: 34px; border-top: 1px solid var(--t-line); }
+.t-otras h2 { font-size: 20px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 18px; }
+.t-otras__row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.t-otras__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 22px;
+  border: 1px solid var(--t-line);
+  border-radius: 14px;
+  background: var(--t-surface);
+  transition: border-color .15s, transform .15s, background .15s;
+}
+.t-otras__item:hover { border-color: #cfe0d6; background: #fff; transform: translateY(-2px); }
+.t-otras__item strong { font-size: 15.5px; font-weight: 600; }
+.t-otras__item span { font-size: 13.5px; color: var(--t-muted); line-height: 1.5; }
+.t-otras__item em { margin-top: 6px; font-style: normal; font-size: 13px; font-weight: 600; color: var(--t-brand); }
+
+/* --------------------------- tarjeta con enlace -------------------------- */
+.t-card__link { display: block; flex: 1; }
+.t-card__cta { padding: 0 16px 18px; }
+
+/* ------------------------------ ficha producto --------------------------- */
+.t-product {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: start;
+  padding-top: 30px;
+}
+.t-product__media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  border: 1px solid var(--t-line);
+  display: grid;
+  place-items: center;
+  color: #8b928b;
+  background: var(--t-surface-2);
+  overflow: hidden;
+}
+.t-product__media svg { width: 40%; height: 40%; opacity: .75; }
+.t-product__media[data-seccion="abarrotes"] { background: #f8f3ea; color: #a0814e; }
+.t-product__media[data-seccion="limpieza"] { background: #eef3f5; color: #5f7f8b; }
+.t-product__media[data-seccion="herreria"] { background: #f2efec; color: #8b7a6b; }
+.t-product__hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11.5px;
+  color: var(--t-muted);
+  background: rgba(255,255,255,.85);
+  border: 1px solid var(--t-line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  white-space: nowrap;
+}
+.t-product__info h1 {
+  margin-top: 8px;
+  font-size: 34px;
+  line-height: 1.14;
+  letter-spacing: -.03em;
+  font-weight: 700;
+}
+.t-product__desc { margin-top: 12px; font-size: 15.5px; color: var(--t-ink-2); line-height: 1.6; }
+.t-product__price {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 24px 0 8px;
+  padding: 20px 0;
+  border-top: 1px solid var(--t-line);
+  border-bottom: 1px solid var(--t-line);
+}
+.t-product__price b { font-size: 34px; font-weight: 700; letter-spacing: -.03em; }
+.t-product__price span { font-size: 13.5px; color: var(--t-muted); }
+.t-product__stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--t-brand);
+  margin-bottom: 20px;
+}
+.t-product__stock.is-low { color: #9a5b00; }
+.t-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.t-product__cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.t-list { margin: 26px 0 0; display: flex; flex-direction: column; gap: 9px; }
+.t-list li { display: flex; align-items: flex-start; gap: 9px; font-size: 14px; color: var(--t-ink-2); }
+.t-list svg { color: var(--t-brand); flex: 0 0 auto; margin-top: 3px; }
+.t-specs {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--t-line);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+.t-specs div { display: flex; flex-direction: column; gap: 2px; }
+.t-specs dt { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--t-muted); }
+.t-specs dd { margin: 0; font-size: 13.5px; font-weight: 500; color: var(--t-ink); }
+.t-specs { margin-bottom: 6px; }
+.t-product__note {
+  margin-top: 22px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--t-accent-soft);
+  border: 1px solid #f0e0bd;
+  font-size: 13px;
+  color: #7a5310;
+  line-height: 1.5;
+}
+
 /* ----------------------------- responsive -------------------------------- */
 @media (max-width: 1024px) {
   .t-hero__grid { grid-template-columns: 1fr; gap: 40px; padding: 52px 0 60px; }
@@ -592,6 +760,10 @@
   .t-trust { grid-template-columns: repeat(2, 1fr); gap: 24px; }
   .t-footer__grid { grid-template-columns: 1fr 1fr; gap: 32px; }
   .t-cta { flex-direction: column; align-items: flex-start; padding: 36px 30px; }
+  .t-sechero__grid { grid-template-columns: 1fr; gap: 26px; align-items: start; }
+  .t-product { grid-template-columns: 1fr; gap: 32px; }
+  .t-product__media { max-width: 460px; }
+  .t-otras__row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 860px) {
@@ -620,6 +792,15 @@
   .t-topbar .t-wrap { justify-content: flex-start; overflow-x: auto; white-space: nowrap; }
   .t-cta h2 { font-size: 24px; }
   .t-btn { height: 44px; }
+  .t-sechero h1 { font-size: 30px; }
+  .t-sechero__meta { gap: 24px; }
+  .t-sechero__meta b { font-size: 22px; }
+  .t-product__info h1 { font-size: 26px; }
+  .t-product__price b { font-size: 28px; }
+  .t-specs { grid-template-columns: 1fr; gap: 12px; }
+  .t-product__cta { flex-direction: column; }
+  .t-product__cta .t-btn { width: 100%; }
+  .t-card__cta { padding: 0 12px 14px; }
 }
 
 /* barra de categorías en móvil: se activa con la media query de 860px */

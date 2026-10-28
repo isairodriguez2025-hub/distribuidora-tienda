@@ -106,8 +106,8 @@ function Header() {
             {SECCIONES.map((s) => (
               <Link
                 key={s.id}
-                href={s.slug}
-                className={pathname === s.slug ? 'is-active' : undefined}
+                href={`/tienda/${s.slug}`}
+                className={pathname.startsWith(`/tienda/${s.slug}`) ? 'is-active' : undefined}
               >
                 {s.nombre}
               </Link>
@@ -156,7 +156,7 @@ function Header() {
       {/* Las 3 secciones siempre visibles en móvil (no hamburguesa) */}
       <div className="t-mobile-cats" aria-label="Secciones">
         {SECCIONES.map((s) => (
-          <Link key={s.id} href={s.slug} className={pathname === s.slug ? 'is-active' : undefined}>
+          <Link key={s.id} href={`/tienda/${s.slug}`} className={pathname.startsWith(`/tienda/${s.slug}`) ? 'is-active' : undefined}>
             {s.nombre}
           </Link>
         ))}
@@ -184,7 +184,7 @@ function Footer() {
             <ul>
               {SECCIONES.map((s) => (
                 <li key={s.id}>
-                  <Link href={s.slug}>{s.nombre}</Link>
+                  <Link href={`/tienda/${s.slug}`}>{s.nombre}</Link>
                 </li>
               ))}
               <li>
