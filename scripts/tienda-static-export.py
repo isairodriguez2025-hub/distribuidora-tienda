@@ -30,6 +30,7 @@ Variables opcionales:
 import os
 import re
 import shutil
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -50,6 +51,16 @@ def get(path: str, intentos: int = 3) -> str:
         except Exception as e:  # noqa: BLE001
             ultimo = e
     raise RuntimeError(f"No se pudo leer {path}: {ultimo}")
+
+
+def get_404() -> str:
+    """Pide una ruta que no existe y devuelve el HTML del 404 de Next."""
+    url = f"{BASE}/tienda/pagina-que-no-existe"
+    try:
+        with urllib.request.urlopen(url, timeout=120) as r:
+            return r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.read().decode("utf-8", "replace")
 
 
 def links_internos(html: str) -> set[str]:
@@ -92,7 +103,11 @@ def procesar(html: str, css: str) -> str:
     html = re.sub(r'href="/(login|register|setup)"', 'href="#"', html)
 
     # hoja de estilos compartida (antes iba incrustada en cada pagina)
-    hoja = f'<link rel="stylesheet" href="{PREFIX}/assets/tienda.css">'
+    hoja = (
+        f'<link rel="preload" as="font" type="font/ttf" '
+        f'href="{PREFIX}/fonts/Inter-Regular.ttf" crossorigin>'
+        f'\n<link rel="stylesheet" href="{PREFIX}/assets/tienda.css">'
+    )
     html = html.replace("</head>", hoja + "\n</head>", 1)
     return html
 
@@ -210,6 +225,28 @@ def build() -> None:
         archivo.parent.mkdir(parents=True, exist_ok=True)
         archivo.write_text(final, encoding="utf-8")
         total += archivo.stat().st_size
+
+    # 404 con el diseno del sitio (GitHub Pages lo sirve en rutas inexistentes)
+    cuerpo404 = get("/tienda/404")
+    final404 = procesar(cuerpo404, css).replace("</body>", JS + "</body>", 1)
+    (OUT / "404.html").write_text(final404, encoding="utf-8")
+
+    # robots y sitemap
+    urls = "\n".join(
+        f"  <url><loc>https://isairodriguez2025-hub.github.io{destino(r).parent.as_posix().replace(str(OUT), PREFIX) or PREFIX}/</loc></url>"
+        for r in htmls
+    )
+    (OUT / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{urls}\n</urlset>\n",
+        encoding="utf-8",
+    )
+    (OUT / "robots.txt").write_text(
+        "User-agent: *\nAllow: /\n\n"
+        "Sitemap: https://isairodriguez2025-hub.github.io/distribuidora-tienda/sitemap.xml\n",
+        encoding="utf-8",
+    )
 
     assets = OUT / "assets"
     assets.mkdir()

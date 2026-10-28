@@ -54,11 +54,22 @@ export function Catalogo({
         </div>
       )}
 
-      <div className="t-grid">
-        {visibles.map((p) => (
-          <ProductCard key={p.id} producto={p} />
-        ))}
-      </div>
+      {visibles.length === 0 ? (
+        <div className="t-empty">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.2-3.2" />
+          </svg>
+          <strong>No hay productos en esta selección</strong>
+          <span>Prueba con otra sección o vuelve a «Todos».</span>
+        </div>
+      ) : (
+        <div className="t-grid">
+          {visibles.map((p) => (
+            <ProductCard key={p.id} producto={p} />
+          ))}
+        </div>
+      )}
     </>
   );
 }
