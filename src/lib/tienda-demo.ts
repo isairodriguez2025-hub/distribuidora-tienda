@@ -191,7 +191,7 @@ const BASE: Omit<Producto, 'id' | 'slug'>[] = [
   },
   {
     nombre: 'Papel higiénico 4 rollos',
-    marca: 'Petalo',
+    marca: 'Pétalo',
     presentacion: 'Paquete con 8 piezas',
     precio: 392,
     stock: 30,
@@ -218,7 +218,7 @@ const BASE: Omit<Producto, 'id' | 'slug'>[] = [
     stock: 22,
     seccion: 'limpieza',
     descripcion: 'Limpiador desinfectante para pisos y superficies.',
-    incluye: ['12 botellas de 1 L', 'Aroma pino', 'Action desinfectante'],
+    incluye: ['12 botellas de 1 L', 'Aroma pino', 'Acción desinfectante'],
   },
   {
     nombre: 'Fibra para trastes (3 piezas)',
