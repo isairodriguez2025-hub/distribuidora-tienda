@@ -214,7 +214,7 @@ export default function TiendaPage() {
 
           <div className="t-cats">
             {SECCIONES.map((s) => (
-              <Link key={s.id} href={s.slug} className="t-cat">
+              <Link key={s.id} href={`/tienda/${s.slug}`} className="t-cat">
                 <span className="t-cat__ico">{ICONO[s.id]}</span>
                 <h3>{s.nombre}</h3>
                 <p>{s.descripcion}</p>
