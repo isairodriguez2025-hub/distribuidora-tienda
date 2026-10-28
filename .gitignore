@@ -26,3 +26,8 @@ tsconfig.tsbuildinfo
 *.ts.net.key
 
 propuestas-pos/
+
+# Sitio público: previews locales y variables
+.env.local
+.preview/
+dist-pages/
