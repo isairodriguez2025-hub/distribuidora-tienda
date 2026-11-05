@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Un usuario puede tener un solo rol activo en el MVP.
+/// COMERCIO | MAYORISTA | REPARTIDOR | ADMIN
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  phone        String   @default("")
+  role         String
+  businessName String   @default("")
+  rfc          String   @default("")
+  city         String   @default("")
+  address      String   @default("")
+  kycStatus    String   @default("PENDIENTE")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  products   Product[]
+  orders     Order[]    @relation("Comprador")
+  sales      Order[]    @relation("Mayorista")
+  deliveries Delivery[]
+}
+
+model Product {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   User     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  name       String
+  category   String
+  unit       String   @default("pieza")
+  price      Float
+  stock      Int      @default(0)
+  minQty     Int      @default(1)
+  multiple   Int      @default(1)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  items OrderItem[]
+
+  @@index([category])
+  @@index([supplierId])
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  folio      String   @unique
+  buyerId    String
+  buyer      User     @relation("Comprador", fields: [buyerId], references: [id])
+  supplierId String
+  supplier   User     @relation("Mayorista", fields: [supplierId], references: [id])
+  status     String   @default("PENDIENTE")
+  subtotal   Float
+  iva        Float
+  total      Float
+  address    String   @default("")
+  createdAt  DateTime @default(now())
+
+  items    OrderItem[]
+  delivery Delivery?
+
+  @@index([buyerId])
+  @@index([supplierId])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  name      String
+  qty       Int
+  unitPrice Float
+}
+
+model Delivery {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driverId  String?
+  driver    User?    @relation(fields: [driverId], references: [id])
+  status    String   @default("DISPONIBLE")
+  fee       Float    @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([driverId])
+}

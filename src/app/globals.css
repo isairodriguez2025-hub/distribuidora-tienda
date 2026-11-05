@@ -1,26 +1,104 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-brand: #0e5134;
+  --color-brand-2: #12724a;
+  --color-brand-soft: #eaf3ee;
+  --color-accent: #b07815;
+  --color-accent-soft: #fbf3e2;
+  --color-ink: #0f1210;
+  --color-ink-2: #3c433e;
+  --color-muted: #6b736d;
+  --color-line: #e8e8e2;
+  --color-line-2: #d8d9d1;
+  --color-surface: #fbfaf7;
+  --color-surface-2: #f4f4f0;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-card: 16px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background: #fff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  ::selection {
+    background: var(--color-brand-soft);
+    color: var(--color-brand);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-2);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .wrap {
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+    padding-inline: 24px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--color-line);
+    background: #fff;
+    color: var(--color-brand);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--color-line-2);
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14.5px;
+    color: var(--color-ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .field::placeholder {
+    color: #9aa19b;
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--color-brand-2);
+    box-shadow: 0 0 0 3px rgba(18, 114, 74, 0.12);
+  }
+
+  .label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-ink-2);
+    margin-bottom: 6px;
+  }
 }
