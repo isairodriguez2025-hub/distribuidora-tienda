@@ -187,27 +187,30 @@ function Footer() {
                   <Link href={`/tienda/${s.slug}`}>{s.nombre}</Link>
                 </li>
               ))}
-              <li>
-                <Link href="/tienda/catalogo">Todos los productos</Link>
-              </li>
             </ul>
           </div>
 
           <div>
-            <h4>Mi cuenta</h4>
+            <h4>Entregas y pagos</h4>
             <ul>
-              <li><Link href="/login">Iniciar sesión</Link></li>
-              <li><Link href="/tienda/carrito">Mi carrito</Link></li>
-              <li><Link href="/tienda/pedidos">Mis pedidos</Link></li>
-              <li><Link href="/tienda/seguimiento">Rastrear entrega</Link></li>
+              <li>CDMX y zona metropolitana</li>
+              <li>Entrega en 24 a 48 horas</li>
+              <li>Envío gratis desde $1,500</li>
+              <li>Transferencia o efectivo al recibir</li>
             </ul>
           </div>
 
           <div>
             <h4>Contacto</h4>
             <ul>
-              <li>WhatsApp 55 1234 5678</li>
-              <li>ventas@distribuidora.mx</li>
+              <li>
+                <a href="https://wa.me/525512345678" target="_blank" rel="noopener noreferrer">
+                  WhatsApp 55 1234 5678
+                </a>
+              </li>
+              <li>
+                <a href="mailto:ventas@distribuidora.mx">ventas@distribuidora.mx</a>
+              </li>
               <li>Lun a vie · 9:00 a 18:00</li>
               <li>Sábado · 9:00 a 14:00</li>
             </ul>
@@ -216,7 +219,11 @@ function Footer() {
 
         <div className="t-footer__bottom">
           <span>© {new Date().getFullYear()} Distribuidora. Todos los derechos reservados.</span>
-          <span>Aviso de privacidad · Términos · Devoluciones</span>
+          <span className="t-footer__legal">
+            <Link href="/tienda/aviso-de-privacidad">Aviso de privacidad</Link>
+            <Link href="/tienda/terminos">Términos</Link>
+            <Link href="/tienda/devoluciones">Devoluciones</Link>
+          </span>
         </div>
       </div>
     </footer>
