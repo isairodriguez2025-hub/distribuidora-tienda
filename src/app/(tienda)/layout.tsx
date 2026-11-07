@@ -1,4 +1,4 @@
-import type { Metadata } from 'react';
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import { TiendaShell } from '@/components/tienda/TiendaShell';
