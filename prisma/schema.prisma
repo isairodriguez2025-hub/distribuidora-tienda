@@ -124,6 +124,12 @@ model PaymentMethod {
 model Product {
   id             Int        @id @default(autoincrement())
   name           String
+  slug           String     @unique @default("")
+  brand          String     @default("")
+  presentation   String     @default("")
+  description    String     @default("")
+  includes       String     @default("[]")
+  label          String     @default("")
   barcode        String     @default("")
   price          Float
   cost           Float      @default(0)
