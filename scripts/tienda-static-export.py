@@ -40,6 +40,8 @@ PREFIX = os.environ.get("TIENDA_BASE", "/distribuidora-tienda")
 FONTS_SRC = Path("public/fonts")
 
 SECCIONES = ["abarrotes", "limpieza", "herreria"]
+# Páginas legales: el pie las enlaza, así que también se publican.
+LEGALES = ["aviso-de-privacidad", "terminos", "devoluciones"]
 
 
 def get(path: str, intentos: int = 3) -> str:
@@ -201,7 +203,11 @@ def build() -> None:
     css = f"/* prefijo del project site */\n" + css.replace("url(/fonts/", f"url({PREFIX}/fonts/")
 
     # Descubrir rutas: portada -> secciones -> fichas de producto
-    rutas = ["/tienda"] + [f"/tienda/{s}" for s in SECCIONES]
+    rutas = (
+        ["/tienda"]
+        + [f"/tienda/{s}" for s in SECCIONES]
+        + [f"/tienda/{l}" for l in LEGALES]
+    )
     htmls = {r: (home if r == "/tienda" else get(r)) for r in rutas}
 
     productos = set()
