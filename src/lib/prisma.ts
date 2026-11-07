@@ -1,4 +1,22 @@
+import path from "node:path";
+
 import { Prisma, PrismaClient } from "@prisma/client";
+
+/**
+ * Prisma resuelve las rutas relativas de SQLite desde la carpeta del esquema.
+ * Dentro del bundle de Next eso apunta a .next/server, donde la base no
+ * existe, y el login falla con "Unable to open the database file".
+ * Se normaliza a ruta absoluta antes de crear el cliente.
+ */
+function normalizarRutaSqlite() {
+  const url = process.env.DATABASE_URL;
+  if (!url || !url.startsWith("file:./")) return;
+  const rel = url.slice("file:".length).replace(/^\.\//, "");
+  const destino = rel.startsWith("prisma/") ? rel : path.join("prisma", rel);
+  process.env.DATABASE_URL = `file:${path.resolve(process.cwd(), destino)}`;
+}
+
+normalizarRutaSqlite();
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
