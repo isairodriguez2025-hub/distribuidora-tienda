@@ -166,6 +166,10 @@ model Product {
 
   piecesLog      PiecesLog[]
 
+  stockBatches   StockBatch[]
+  notifications  Notification[]
+  storeOrderItems StoreOrderItem[]
+
   @@index([barcode])
   @@index([departmentId])
   @@index([supplierId])
@@ -208,6 +212,8 @@ model Customer {
   sales           Sale[]
   wishlistItems   CustomerWishlistItem[]
   deliveryNotices DeliveryNotice[]
+  addresses       Address[]
+  storeOrders     StoreOrder[]
 
   @@index([name])
   @@index([fingerprintHash])
@@ -556,4 +562,154 @@ model StockAlert {
   @@index([saleId])
   @@index([productId])
   @@map("stock_alerts")
+}
+
+model StockBatch {
+  id          Int       @id @default(autoincrement())
+  productId   Int       @map("product_id")
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int
+  expiryDate  DateTime? @map("expiry_date")
+  batchCode   String    @default("") @map("batch_code")
+  receivedVia String    @default("manual") @map("received_via")
+  notes       String    @default("")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([productId, expiryDate])
+  @@map("stock_batches")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  type      String
+  title     String
+  message   String
+  productId Int?     @map("product_id")
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  severity  String   @default("warning")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([read, createdAt])
+  @@index([productId])
+  @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// Tienda en línea: direcciones, pedidos con entrega y seguimiento del repartidor
+// (capítulo 5 del documento de pasos). El POS usa Sale; estos modelos son para
+// los pedidos que llegan desde el sitio público.
+// ---------------------------------------------------------------------------
+
+model Address {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  alias      String   @default("Casa")
+  street     String
+  number     String   @default("")
+  colony     String   @default("")
+  city       String   @default("")
+  state      String   @default("")
+  zip        String   @default("")
+  references String   @default("")
+  lat        Float?
+  lng        Float?
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  orders StoreOrder[]
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+model StoreOrder {
+  id            Int       @id @default(autoincrement())
+  folio         String    @unique
+  customerId    Int?      @map("customer_id")
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  status        String    @default("nuevo")
+  subtotal      Float     @default(0)
+  shipping      Float     @default(0)
+  total         Float     @default(0)
+  paymentMethod String    @default("transferencia") @map("payment_method")
+  addressId     Int?      @map("address_id")
+  address       Address?  @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  addressText   String    @default("") @map("address_text")
+  notes         String    @default("")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  items    StoreOrderItem[]
+  delivery Delivery?
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("store_orders")
+}
+
+model StoreOrderItem {
+  id          Int        @id @default(autoincrement())
+  orderId     Int        @map("order_id")
+  order       StoreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   Int?       @map("product_id")
+  product     Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String     @map("product_name")
+  unitPrice   Float      @map("unit_price")
+  quantity    Int
+  subtotal    Float
+
+  @@index([orderId])
+  @@map("store_order_items")
+}
+
+model Driver {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @default("")
+  vehicle   String   @default("")
+  plate     String   @default("")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  deliveries Delivery[]
+  locations  DriverLocation[]
+
+  @@map("drivers")
+}
+
+model Delivery {
+  id          Int        @id @default(autoincrement())
+  orderId     Int        @unique @map("order_id")
+  order       StoreOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  driverId    Int?       @map("driver_id")
+  driver      Driver?    @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  status      String     @default("asignado")
+  startedAt   DateTime?  @map("started_at")
+  deliveredAt DateTime?  @map("delivered_at")
+  proof       String     @default("")
+  notes       String     @default("")
+
+  locations DriverLocation[]
+
+  @@index([driverId])
+  @@map("deliveries")
+}
+
+model DriverLocation {
+  id         Int       @id @default(autoincrement())
+  driverId   Int       @map("driver_id")
+  driver     Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  deliveryId Int?      @map("delivery_id")
+  delivery   Delivery? @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  lat        Float
+  lng        Float
+  accuracy   Float?    @map("accuracy_m")
+  recordedAt DateTime  @default(now()) @map("recorded_at")
+
+  @@index([deliveryId])
+  @@index([driverId, recordedAt])
+  @@map("driver_locations")
 }
