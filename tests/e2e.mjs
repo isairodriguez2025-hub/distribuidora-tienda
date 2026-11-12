@@ -8,7 +8,8 @@ import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3100";
-const SHOTS = "/home/rizutov/.hermes/cache/scratch/didi2";
+// Carpeta de capturas: configurable, para que la prueba corra en cualquier máquina.
+const SHOTS = process.env.SHOTS_DIR ?? "./tests/capturas";
 mkdirSync(SHOTS, { recursive: true });
 
 const resultados = [];
@@ -21,7 +22,13 @@ function fallo(nombre, error) {
   console.log(`  ✗ ${nombre} — ${String(error).slice(0, 200)}`);
 }
 
-const browser = await chromium.launch({ channel: "chrome" });
+// Usa el Chrome del sistema si existe; si no, el Chromium de Playwright o el
+// que se indique con CHROME_PATH (útil en Linux y en contenedores).
+const browser = await chromium.launch(
+  process.env.CHROME_PATH
+    ? { executablePath: process.env.CHROME_PATH }
+    : { channel: "chrome" },
+);
 const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
 const page = await context.newPage();
 
