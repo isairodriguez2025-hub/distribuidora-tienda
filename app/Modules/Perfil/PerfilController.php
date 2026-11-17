@@ -20,6 +20,7 @@ final class PerfilController
     public function __construct(
         private readonly PerfilRepository $repo,
         private readonly KycService $kyc,
+        private readonly AvatarService $avatares,
         private readonly string $directorioVistas,
     ) {
     }
@@ -60,7 +61,59 @@ final class PerfilController
             'kyc'         => $this->kyc->estado($id, $rol),
             'errores'     => [],
             'valores'     => [],
+            'avatarUrl'   => AvatarService::url($id),
+            'mensaje'     => null,
         ]);
+    }
+
+    /** POST /perfil/avatar */
+    public function subirAvatar(Request $peticion): Response
+    {
+        $id = $this->usuarioId();
+
+        try {
+            $this->avatares->guardar($id, $peticion->file('avatar') ?? []);
+            $mensaje = 'Foto actualizada.';
+            $error = null;
+        } catch (\Throwable $e) {
+            $mensaje = null;
+            $error = $e->getMessage();
+        }
+
+        return $this->vista('perfil/index', [
+            'titulo'      => 'Mi perfil',
+            'rol'         => $this->rol(),
+            'perfil'      => $this->repo->perfil($id, $this->rol()),
+            'direcciones' => $this->repo->listarDirecciones($id),
+            'kyc'         => $this->kyc->estado($id, $this->rol()),
+            'errores'     => $error !== null ? ['avatar' => $error] : [],
+            'valores'     => [],
+            'avatarUrl'   => AvatarService::url($id),
+            'mensaje'     => $mensaje,
+        ], $error !== null ? 422 : 200);
+    }
+
+    /** POST /perfil/avatar/quitar */
+    public function quitarAvatar(Request $peticion): Response
+    {
+        $this->avatares->quitar($this->usuarioId());
+
+        return Response::redirect('/perfil');
+    }
+
+    /** GET /avatar/{id} — sirve la imagen guardada fuera de public/. */
+    public function avatar(Request $peticion, array $parametros): Response
+    {
+        $id = (int) ($parametros['id'] ?? 0);
+        $ruta = $this->avatares->ruta($id);
+
+        if ($ruta === null) {
+            return Response::json(['error' => ['code' => 'NO_ENCONTRADO', 'message' => 'Sin foto.']], 404);
+        }
+
+        $tipo = str_ends_with($ruta, '.webp') ? 'image/webp' : 'image/jpeg';
+
+        return Response::archivo($ruta, $tipo);
     }
 
     public function guardarDireccion(Request $peticion): Response

@@ -82,6 +82,10 @@ final class NotificacionService
             $canales[] = 'push';
         }
 
+        if ((int) ($pref['sms'] ?? 0) === 1) {
+            $canales[] = 'sms';
+        }
+
         return $canales;
     }
 
@@ -93,7 +97,7 @@ final class NotificacionService
     public function enviarPendientes(int $limite = 50): array
     {
         $stmt = $this->pdo->prepare(
-            "SELECT n.*, u.email FROM notificaciones n JOIN usuarios u ON u.id = n.usuario_id
+            "SELECT n.*, u.email, u.telefono FROM notificaciones n JOIN usuarios u ON u.id = n.usuario_id
              WHERE n.estado = 'pendiente' ORDER BY n.created_at LIMIT ?"
         );
         $stmt->bindValue(1, $limite, PDO::PARAM_INT);
@@ -117,12 +121,36 @@ final class NotificacionService
                 continue;
             }
 
+            if ($n['canal'] === 'sms') {
+                $telefono = trim((string) ($n['telefono'] ?? ''));
+
+                if ($telefono === '') {
+                    $this->marcar((int) $n['id'], 'fallido', 'El usuario no tiene teléfono registrado');
+                    $fallidas++;
+                    continue;
+                }
+
+                $resultado = $this->sms()->enviar($telefono, (string) $n['cuerpo']);
+                $this->marcar(
+                    (int) $n['id'],
+                    $resultado['ok'] ? 'enviado' : 'fallido',
+                    $resultado['simulado'] ? 'SIMULADO · ' . $resultado['mensaje'] : ($resultado['ok'] ? null : $resultado['mensaje']),
+                );
+                $resultado['ok'] ? $enviadas++ : $fallidas++;
+                continue;
+            }
+
             // Push sin librería VAPID instalada: se deja pendiente, no se finge enviado.
             $this->marcar((int) $n['id'], 'fallido', 'Push no configurado en este entorno');
             $fallidas++;
         }
 
         return ['enviadas' => $enviadas, 'fallidas' => $fallidas];
+    }
+
+    private function sms(): HttpsmsClient
+    {
+        return HttpsmsClient::desdeEntorno();
     }
 
     private function marcar(int $id, string $estado, ?string $error = null): void

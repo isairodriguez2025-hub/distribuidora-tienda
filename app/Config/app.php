@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Core\Container;
+use App\Core\Csrf;
 use App\Core\ErrorHandler;
 use App\Core\HealthController;
 use App\Core\Logger;
@@ -135,7 +136,9 @@ $kyc = new KycService(
     __DIR__ . '/../../storage/kyc',
 );
 
-$perfil = new PerfilController($perfiles, $kyc, __DIR__ . '/../Views');
+$avatares = new \App\Modules\Perfil\AvatarService($pdo, __DIR__ . '/../../storage/avatars');
+
+$perfil = new PerfilController($perfiles, $kyc, $avatares, __DIR__ . '/../Views');
 
 $productos = new ProductoRepository($pdo);
 $catalogo = new CatalogoController(
@@ -162,6 +165,9 @@ $router->post('/restablecer', [$auth, 'restablecer'], [$seguridad, new CsrfProte
 
 // --- Perfil, direcciones y KYC ---------------------------------------------
 $router->get('/perfil', [$perfil, 'perfil'], [$seguridad, new AuthRequired()]);
+$router->post('/perfil/avatar', [$perfil, 'subirAvatar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->post('/perfil/avatar/quitar', [$perfil, 'quitarAvatar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->get('/avatar/{id:\d+}', [$perfil, 'avatar'], [$seguridad]);
 $router->post('/perfil/direccion', [$perfil, 'guardarDireccion'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/kyc', [$perfil, 'kycForm'], [$seguridad, new AuthRequired()]);
 $router->post('/kyc', [$perfil, 'subirKyc'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
@@ -267,6 +273,38 @@ $router->get('/internal/tick', [$tick, 'tick'], [$seguridad]);
 $avisosCtl = new NotificacionController($notificaciones, __DIR__ . '/../Views');
 $router->get('/notificaciones', [$avisosCtl, 'index'], [$seguridad, new AuthRequired()]);
 
+// --- Mensajería interna ----------------------------------------------------
+$mensajesRepo = new \App\Modules\Mensajes\MensajeRepository($pdo);
+$mensajesSrv = new \App\Modules\Mensajes\MensajeService($mensajesRepo, $notificaciones, $auditoria);
+$mensajesCtl = new \App\Modules\Mensajes\MensajeController($mensajesSrv, __DIR__ . '/../Views');
+
+$router->get('/mensajes', [$mensajesCtl, 'index'], [$seguridad, new AuthRequired()]);
+$router->post('/mensajes/enviar', [$mensajesCtl, 'enviar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->post('/mensajes/soporte', [$mensajesCtl, 'soporte'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->post('/mensajes/directo', [$mensajesCtl, 'directo'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->get('/mensajes/{uuid:[0-9a-fA-F-]{36}}/nuevos', [$mensajesCtl, 'nuevos'], [$seguridad, new AuthRequired()]);
+
+// --- Punto de venta del comercio -------------------------------------------
+$posRepo = new \App\Modules\Pos\PosRepository($pdo);
+$posSrv = new \App\Modules\Pos\PosService($posRepo, $auditoria, $notificaciones);
+$posCtl = new \App\Modules\Pos\PosController($posSrv, $posRepo, __DIR__ . '/../Views');
+
+$router->get('/pos', [$posCtl, 'caja'], $soloComercio);
+$router->post('/pos/turno/abrir', [$posCtl, 'abrirTurno'], [...$soloComercio, new CsrfProtect()]);
+$router->post('/pos/turno/cerrar', [$posCtl, 'cerrarTurno'], [...$soloComercio, new CsrfProtect()]);
+$router->get('/pos/corte', [$posCtl, 'corte'], $soloComercio);
+$router->post('/pos/vender', [$posCtl, 'vender'], [...$soloComercio, new CsrfProtect()]);
+$router->get('/pos/productos', [$posCtl, 'productos'], $soloComercio);
+$router->post('/pos/productos', [$posCtl, 'guardarProducto'], [...$soloComercio, new CsrfProtect()]);
+$router->post('/pos/productos/{id:\d+}/eliminar', [$posCtl, 'eliminarProducto'], [...$soloComercio, new CsrfProtect()]);
+$router->post('/pos/ajustes', [$posCtl, 'guardarAjustes'], [...$soloComercio, new CsrfProtect()]);
+$router->post('/pos/reponer', [$posCtl, 'reponer'], [...$soloComercio, new CsrfProtect()]);
+$router->get('/pos/ventas', [$posCtl, 'ventas'], $soloComercio);
+$router->get('/pos/ticket/{uuid:[0-9a-fA-F-]{36}}', [$posCtl, 'ticket'], $soloComercio);
+$router->post('/pos/ventas/{uuid:[0-9a-fA-F-]{36}}/cancelar', [$posCtl, 'cancelar'], [...$soloComercio, new CsrfProtect()]);
+$router->get('/pos/clientes', [$posCtl, 'clientes'], $soloComercio);
+$router->post('/pos/clientes', [$posCtl, 'clientes'], [...$soloComercio, new CsrfProtect()]);
+
 // --- Repartidor ------------------------------------------------------------
 $soloRepartidor = [$seguridad, new AuthRequired(), new RoleRequired(['repartidor'])];
 
@@ -362,6 +400,17 @@ $router->get('/comercio', static fn (): Response => Response::redirect('/buscar'
 
 $router->get('/mayorista', static fn (): Response => Response::redirect('/mayorista/productos'),
     [$seguridad, new AuthRequired(), new RoleRequired(['mayorista'])]);
+
+// --- Compatibilidad con las URLs del despliegue anterior -------------------
+// El sitio que estuvo publicado antes vivía en /tienda y /app/*. Quien tenga
+// esos enlaces guardados cae en 404; se redirige a la pantalla equivalente.
+$router->get('/tienda', static fn (): Response => Response::redirect('/buscar'), [$seguridad]);
+$router->get('/tienda/{ruta:.*}', static fn (): Response => Response::redirect('/buscar'), [$seguridad]);
+$router->get('/app', static fn (): Response => Response::redirect('/login'), [$seguridad]);
+$router->get('/app/comercio', static fn (): Response => Response::redirect('/buscar'), [$seguridad]);
+$router->get('/app/mayorista', static fn (): Response => Response::redirect('/mayorista/productos'), [$seguridad]);
+$router->get('/app/repartidor', static fn (): Response => Response::redirect('/repartidor'), [$seguridad]);
+$router->get('/app/admin', static fn (): Response => Response::redirect('/admin'), [$seguridad]);
 
 $contenedor = new Container();
 $contenedor->set(Logger::class, $logger);

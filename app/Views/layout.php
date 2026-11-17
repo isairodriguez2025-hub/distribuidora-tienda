@@ -11,6 +11,27 @@ $usuario = \App\Core\Session::obtener('user_id', null);
 $roles = \App\Core\Session::obtener('roles', []);
 $rol = is_array($roles) && $roles !== [] ? (string) $roles[0] : null;
 
+// Nombre y foto para el menú de cuenta (una sola consulta por página).
+$nombreCuenta = '';
+$avatarUrl = null;
+if ($usuario !== null) {
+    try {
+        $stmtCuenta = \App\Config\Database::conexion()->prepare(
+            'SELECT u.email, c.nombre_negocio, m.nombre_comercial
+               FROM usuarios u
+               LEFT JOIN comercios_perfil c ON c.usuario_id = u.id
+               LEFT JOIN mayoristas_perfil m ON m.usuario_id = u.id
+              WHERE u.id = ? LIMIT 1'
+        );
+        $stmtCuenta->execute([$usuario]);
+        $filaCuenta = $stmtCuenta->fetch() ?: [];
+        $nombreCuenta = (string) ($filaCuenta['nombre_negocio'] ?? $filaCuenta['nombre_comercial'] ?? $filaCuenta['email'] ?? '');
+        $avatarUrl = \App\Modules\Perfil\AvatarService::url((int) $usuario);
+    } catch (\Throwable) {
+        $nombreCuenta = '';
+    }
+}
+
 $enlaces = [];
 if ($usuario !== null) {
     $enlaces[] = ['/buscar', 'Buscar'];
@@ -28,18 +49,43 @@ if ($usuario !== null) {
 
     $enlaces[] = ['/finanzas', 'Finanzas'];
     $enlaces[] = ['/facturacion', 'Facturación'];
-    $enlaces[] = ['/admin', 'Admin'];
+    if (in_array($rol, ['admin_total', 'admin_kyc', 'admin_soporte', 'admin_finanzas'], true)) {
+        $enlaces[] = ['/admin', 'Admin'];
+    }
     $enlaces[] = ['/notificaciones', 'Avisos'];
-    $enlaces[] = ['/perfil', 'Mi perfil'];
+    $enlaces[] = ['/mensajes', 'Mensajes'];
+    if ($rol === 'comercio') {
+        $enlaces[] = ['/pos', 'Caja'];
+    }
     if (in_array($rol, ['admin_total', 'admin_kyc'], true)) {
         $enlaces[] = ['/admin/kyc', 'Verificaciones'];
+    }
+}
+
+// Mensajes sin leer para el globo del menú.
+$sinLeerMsg = 0;
+if ($usuario !== null) {
+    try {
+        $stmtMsg = \App\Config\Database::conexion()->prepare(
+            'SELECT COUNT(*) FROM mensajes_directos m
+               JOIN conversacion_participantes p
+                 ON p.conversacion_id = m.conversacion_id AND p.usuario_id = ?
+              WHERE m.id > p.ultimo_leido_id AND m.autor_id <> ?'
+        );
+        $stmtMsg->execute([$usuario, $usuario]);
+        $sinLeerMsg = (int) $stmtMsg->fetchColumn();
+    } catch (\Throwable) {
+        $sinLeerMsg = 0;
     }
 }
 
 $nav = '';
 foreach ($enlaces as [$href, $texto]) {
     $activo = str_starts_with((string) ($_SERVER['REQUEST_URI'] ?? ''), $href) ? ' class="activo"' : '';
-    $nav .= '<a href="' . $e($href) . '"' . $activo . '>' . $e($texto) . '</a>';
+    $globo = $href === '/mensajes' && $sinLeerMsg > 0
+        ? ' <span class="nav-globo">' . ($sinLeerMsg > 9 ? '9+' : $sinLeerMsg) . '</span>'
+        : '';
+    $nav .= '<a href="' . $e($href) . '"' . $activo . '>' . $e($texto) . $globo . '</a>';
 }
 ?>
 <!doctype html>
@@ -47,6 +93,7 @@ foreach ($enlaces as [$href, $texto]) {
 <head>
     <meta charset="utf-8">
     <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon-192.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $e($titulo) ?> · Didi2</title>
     <?php if (!empty($mapa)): ?>
@@ -274,17 +321,58 @@ foreach ($enlaces as [$href, $texto]) {
             h1 { font-size: 22px; }
         }
     </style>
+    <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body class="<?= !empty($anchoCompleto) ? 'ancho-completo' : '' ?>">
 <header class="barra">
     <div class="barra__interior">
-        <a class="marca" href="<?= $usuario !== null ? '/perfil' : '/login' ?>">Didi2 <span>· B2B</span></a>
-        <nav><?= $nav ?></nav>
+        <a class="marca" href="<?= $usuario !== null ? '/buscar' : '/login' ?>">Didi2 <span>· B2B</span></a>
+
         <?php if ($usuario !== null): ?>
-            <form method="post" action="/logout" style="margin:0">
-                <input type="hidden" name="_csrf" value="<?= $e(\App\Core\Csrf::token()) ?>">
-                <button type="submit" class="salir" style="background:none;border:0;padding:0;cursor:pointer">Salir</button>
-            </form>
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-principal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <path d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <nav id="nav-principal" aria-label="Principal"><?= $nav ?></nav>
+        <?php else: ?>
+            <nav aria-label="Principal"><?= $nav ?></nav>
+        <?php endif; ?>
+
+        <?php if ($usuario !== null): ?>
+            <div class="cuenta">
+                <button type="button" class="cuenta__boton" id="cuenta-boton" aria-haspopup="true" aria-expanded="false" aria-controls="cuenta-menu">
+                    <?php if ($avatarUrl !== null): ?>
+                        <img class="cuenta__foto" src="<?= $e($avatarUrl) ?>" alt="" width="32" height="32" decoding="async">
+                    <?php else: ?>
+                        <span class="cuenta__iniciales" aria-hidden="true"><?= $e(\App\Modules\Perfil\AvatarService::iniciales($nombreCuenta)) ?></span>
+                    <?php endif; ?>
+                    <span class="cuenta__chevron" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                    </span>
+                    <span class="visually-hidden">Mi cuenta</span>
+                </button>
+
+                <div class="cuenta__menu" id="cuenta-menu" role="menu" data-abierto="0">
+                    <div class="cuenta__cabecera">
+                        <div class="cuenta__nombre"><?= $e($nombreCuenta) ?></div>
+                        <div class="cuenta__rol"><?= $e(str_replace('_', ' ', (string) $rol)) ?></div>
+                    </div>
+                    <a role="menuitem" href="/perfil">Mi perfil</a>
+                    <?php if ($rol === 'comercio'): ?>
+                        <a role="menuitem" href="/pedidos">Mis pedidos</a>
+                    <?php elseif ($rol === 'mayorista'): ?>
+                        <a role="menuitem" href="/mayorista/pedidos">Pedidos recibidos</a>
+                    <?php endif; ?>
+                    <a role="menuitem" href="/mensajes">Mensajes</a>
+                    <a role="menuitem" href="/notificaciones">Avisos</a>
+                    <div class="cuenta__sep"></div>
+                    <form method="post" action="/logout" style="margin:0">
+                        <input type="hidden" name="_csrf" value="<?= $e(\App\Core\Csrf::token()) ?>">
+                        <button type="submit" role="menuitem" class="cuenta__salir">Cerrar sesión</button>
+                    </form>
+                </div>
+            </div>
         <?php endif; ?>
     </div>
 </header>
@@ -317,6 +405,45 @@ $enCarrito = str_starts_with((string) ($_SERVER['REQUEST_URI'] ?? ''), '/carrito
 <?php endif; ?>
 <script nonce="<?= $nonce ?? '' ?>">
 if ("serviceWorker" in navigator) { window.addEventListener("load", function() { navigator.serviceWorker.register("/sw.js"); }); }
+
+// Menú de cuenta y navegación móvil.
+(function () {
+    var boton = document.getElementById('cuenta-boton');
+    var menu = document.getElementById('cuenta-menu');
+    var navToggle = document.getElementById('nav-toggle');
+    var nav = document.getElementById('nav-principal');
+
+    function cerrarMenu() {
+        if (!menu) return;
+        menu.setAttribute('data-abierto', '0');
+        boton.setAttribute('aria-expanded', 'false');
+    }
+
+    if (boton && menu) {
+        boton.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var abierto = menu.getAttribute('data-abierto') === '1';
+            menu.setAttribute('data-abierto', abierto ? '0' : '1');
+            boton.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!menu.contains(e.target) && e.target !== boton) cerrarMenu();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { cerrarMenu(); boton.focus(); }
+        });
+    }
+
+    if (navToggle && nav) {
+        navToggle.addEventListener('click', function () {
+            var abierto = nav.getAttribute('data-abierto') === '1';
+            nav.setAttribute('data-abierto', abierto ? '0' : '1');
+            navToggle.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+        });
+    }
+})();
 </script>
 </body>
 </html>

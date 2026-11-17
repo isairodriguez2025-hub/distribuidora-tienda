@@ -1,11 +1,12 @@
 // Didi2 B2B — serviceWorker para PWA
 // Cache-first para assets, network-first para HTML/API
-const CACHE_NAME = 'did2-v1';
+const CACHE_NAME = 'did2-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  '/icon-192.svg',
+  '/icon-512.svg',
+  '/assets/css/app.css',
 ];
 
 self.addEventListener('install', (event) => {
