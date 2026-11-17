@@ -21,12 +21,12 @@ foreach ($regimenes as $r) {
 
 $opcionesUso = '';
 foreach ($usos as $u) {
-    $sel = ($datos !== null && $datosFiscales['uso_cfdi'] === $u['clave']) ? ' selected' : '';
+    $sel = ($datosFiscales !== null && $datosFiscales['uso_cfdi'] === $u['clave']) ? ' selected' : '';
     $opcionesUso .= '<option value="' . $e($u['clave']) . '"' . $sel . '>' . $e($u['clave'] . ' · ' . $u['nombre']) . '</option>';
 }
 
 $formDatos = '<div style="background:#fff;border:1px solid #e8e6df;border-radius:12px;padding:18px;max-width:640px">'
-    . '<h2 style="margin-top:0">' . ($datos === null ? 'Registra tus datos fiscales' : 'Tus datos fiscales') . '</h2>'
+    . '<h2 style="margin-top:0">' . ($datosFiscales === null ? 'Registra tus datos fiscales' : 'Tus datos fiscales') . '</h2>'
     . '<p style="font-size:13px;color:#6b7280;margin:0 0 14px">'
     . 'Son necesarios para emitir facturas CFDI 4.0. El RFC se valida con el formato oficial.</p>'
     . '<form method="post" action="/facturacion/datos">'

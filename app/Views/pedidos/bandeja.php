@@ -71,7 +71,7 @@ $contenido = '<h1>Pedidos recibidos</h1>'
     . '<table><thead><tr><th>Comercio</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>' . $filas . '</tbody></table>';
 
 $scripts = <<<'JS'
-document.querySelectorAll('.cuenta').forEach(el => {
+document.querySelectorAll('.cuenta[data-limite]').forEach(el => {
     const limite = new Date(el.dataset.limite.replace(' ', 'T')).getTime();
     const pintar = () => {
         const resta = limite - Date.now();

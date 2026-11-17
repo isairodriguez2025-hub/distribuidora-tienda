@@ -67,9 +67,9 @@ foreach ($mayoristas as [$nombre, $giro, $lat, $lng, $reputacion, $minimo]) {
 
     $pdo->prepare(
         "INSERT INTO mayoristas_perfil
-         (usuario_id, nombre_comercial, categoria_giro, latitud, longitud, monto_minimo,
+         (uuid, usuario_id, nombre_comercial, categoria_giro, latitud, longitud, monto_minimo,
           estado_kyc, reputacion, horario_apertura, horario_cierre, activo)
-         VALUES (?, ?, ?, ?, ?, ?, 'aprobado', ?, '08:00:00', '18:00:00', 1)"
+         VALUES (UUID(), ?, ?, ?, ?, ?, ?, 'aprobado', ?, '08:00:00', '18:00:00', 1)"
     )->execute([$usuarioId, $nombre, $giro, $lat, $lng, $minimo, $reputacion]);
 
     $mayoristaId = (int) $pdo->lastInsertId();

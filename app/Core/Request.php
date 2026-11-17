@@ -96,7 +96,29 @@ final class Request
 
     public function ip(): string
     {
-        return (string) ($this->server['REMOTE_ADDR'] ?? '0.0.0.0');
+        $remota = (string) ($this->server['REMOTE_ADDR'] ?? '0.0.0.0');
+
+        /*
+         * Detrás del funnel de Tailscale todas las peticiones llegan desde
+         * 127.0.0.1, así que el rate limit por IP acabaría siendo un cubo
+         * único compartido por todos los visitantes: unos cuantos logins y
+         * el sitio entero queda bloqueado. El proceso solo escucha en
+         * loopback y el único que puede escribir X-Forwarded-For es el proxy,
+         * de modo que en ese caso se usa la IP real del cliente.
+         */
+        if ($remota === '127.0.0.1' || $remota === '::1') {
+            $reenvio = $this->header('X-Forwarded-For');
+
+            if ($reenvio !== null && $reenvio !== '') {
+                $primera = trim(explode(',', $reenvio)[0]);
+
+                if (filter_var($primera, FILTER_VALIDATE_IP) !== false) {
+                    return $primera;
+                }
+            }
+        }
+
+        return $remota;
     }
 
     public function isJson(): bool

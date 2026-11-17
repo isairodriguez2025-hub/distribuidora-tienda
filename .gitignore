@@ -20,3 +20,7 @@
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Router local de php -S y fotos de perfil subidas en tiempo de ejecución
+/server-router.php
+/storage/avatars/

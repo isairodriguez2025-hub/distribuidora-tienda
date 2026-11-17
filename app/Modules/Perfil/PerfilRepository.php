@@ -44,7 +44,7 @@ final class PerfilRepository
 
         if ($tabla === 'mayoristas_perfil') {
             $stmt = $this->pdo->prepare(
-                'INSERT INTO mayoristas_perfil (usuario_id, nombre_comercial) VALUES (?, ?)'
+                'INSERT INTO mayoristas_perfil (uuid, usuario_id, nombre_comercial) VALUES (UUID(), ?, ?)'
             );
             $stmt->execute([$usuarioId, $nombreNegocio]);
 

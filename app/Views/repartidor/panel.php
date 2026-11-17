@@ -59,7 +59,7 @@ $tokenCsrf = $csrf;
 $snippet = '';
 
 $scripts = <<<'JS'
-document.querySelectorAll('.cuenta').forEach(el => {
+document.querySelectorAll('.cuenta[data-limite]').forEach(el => {
     const limite = new Date(el.dataset.limite.replace(' ', 'T')).getTime();
     const pintar = () => {
         const resta = limite - Date.now();
@@ -71,7 +71,7 @@ document.querySelectorAll('.cuenta').forEach(el => {
 });
 
 // Durante el viaje se envían posiciones del GPS cada ~12 segundos.
-if (""" . ($enViaje ? "true" : "false") . """ && navigator.geolocation) {
+if (__ENVIAJE__ && navigator.geolocation) {
     let cola = [];
 
     navigator.geolocation.watchPosition(
@@ -95,7 +95,7 @@ if (""" . ($enViaje ? "true" : "false") . """ && navigator.geolocation) {
             await fetch('/tracking/posicion', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': """ . $tokenCsrf . """ },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '__CSRF__' },
                 body: JSON.stringify(lote)
             });
         } catch (e) {
@@ -105,5 +105,11 @@ if (""" . ($enViaje ? "true" : "false") . """ && navigator.geolocation) {
 }
 
 JS;
+
+$scripts = str_replace(
+    ['__ENVIAJE__', '__CSRF__'],
+    [$enViaje ? 'true' : 'false', $tokenCsrf],
+    $scripts,
+);
 
 require __DIR__ . '/../layout.php';

@@ -2,6 +2,8 @@
 /** @var callable $e */
 /** @var string $csrf */
 
+$titulo = 'Aviso de privacidad';
+
 $contenido = '<h1>Aviso de privacidad</h1>'
     . '<div style="max-width:720px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:24px;margin:18px 0">'
     . '<p><strong>Última actualización:</strong> ' . date('d/m/Y') . '</p>'
