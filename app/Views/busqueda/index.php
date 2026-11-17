@@ -107,7 +107,15 @@ if ($paginas > 1) {
 $filtrosJson = json_encode([
     'q' => $filtros['q'] ?? '',
     'categoria_id' => (int) ($filtros['categoria_id'] ?? 0),
+    'radio' => (float) ($filtros['radio'] ?? 10),
+    'orden' => (string) ($filtros['orden'] ?? 'distancia'),
 ], JSON_UNESCAPED_UNICODE) ?: '{}';
+
+// Las fichas que se pintan por AJAX necesitan el token y el permiso de compra
+// en el ámbito de JavaScript; antes se usaban como variables globales
+// inexistentes y el botón "Agregar" fallaba tras la primera búsqueda.
+$csrfJson = json_encode((string) $csrf);
+$puedeComprarJson = $puedeComprar ? 'true' : 'false';
 
 $json = json_encode(array_map(static fn (array $r): array => [
     'nombre'   => $r['nombre'],
@@ -348,13 +356,107 @@ $scripts = <<<JS
 const datos = {$json};
 const categorias = {$jsonCategorias};
 const filtros = {$filtrosJson};
+const csrf = {$csrfJson};
+const puedeComprar = {$puedeComprarJson};
 const mapa = L.map('mapa', { scrollWheelZoom: false }).setView([{$lat}, {$lng}], 12);
 window.mapa = mapa;
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '© OpenStreetMap'
 }).addTo(mapa);
 
-const marcadores = [];
+// --- Marcadores: capa única, agrupación por cuadrícula y repintado diferencial.
+// Antes se destruían y recreaban todos los marcadores en cada búsqueda, lo que
+// producía parpadeo y trabajo inútil. Ahora se guarda la lista de puntos y solo
+// se redibuja cuando cambia el zoom o el conjunto visible.
+const capa = L.layerGroup().addTo(mapa);
+let puntos = [];
+let firmaActual = '';
+const mapaDeMarcadores = new Map();
+let peticionActual = null;
+
+function iconoCluster(n) {
+    return L.divIcon({ className: 'marker-cluster', html: '<span>' + n + '</span>', iconSize: [42, 42], iconAnchor: [21, 21] });
+}
+
+function pintarPuntos() {
+    if (!puntos.length) { capa.clearLayers(); firmaActual = 'vacio'; return; }
+
+    const z = mapa.getZoom();
+    const centro = mapa.project(mapa.getCenter(), z);
+    const celda = 64;
+    const grupos = new Map();
+
+    puntos.forEach((p, i) => {
+        const pt = mapa.project([p.lat, p.lng], z);
+        const k = Math.floor((pt.x - centro.x) / celda) + ':' + Math.floor((pt.y - centro.y) / celda);
+        if (!grupos.has(k)) grupos.set(k, []);
+        grupos.get(k).push(i);
+    });
+
+    const firma = z + '|' + [...grupos.entries()].map(([k, v]) => k + '=' + v.join('.')).sort().join(';');
+    if (firma === firmaActual) return;
+    firmaActual = firma;
+
+    capa.clearLayers();
+    mapaDeMarcadores.clear();
+
+    grupos.forEach((idxs) => {
+        if (idxs.length === 1) {
+            const p = puntos[idxs[0]];
+            const m = L.marker([p.lat, p.lng], { icon: p.icono, keyboard: false, riseOnHover: true });
+            m.bindPopup(p.popup);
+            if (p.idx >= 0) { mapaDeMarcadores.set(p.idx, m); m.on('click', () => resaltar(p.idx, false)); }
+            capa.addLayer(m);
+            return;
+        }
+        const lat = idxs.reduce((t, i) => t + puntos[i].lat, 0) / idxs.length;
+        const lng = idxs.reduce((t, i) => t + puntos[i].lng, 0) / idxs.length;
+        const m = L.marker([lat, lng], { icon: iconoCluster(idxs.length), keyboard: false });
+        const nombres = idxs.slice(0, 4).map(i => puntos[i].titulo).join(' · ');
+        m.bindTooltip(nombres + (idxs.length > 4 ? ' y ' + (idxs.length - 4) + ' más' : ''), { direction: 'top', offset: [0, -14] });
+        m.on('click', () => mapa.setView([lat, lng], Math.min(18, mapa.getZoom() + 2), { animate: true }));
+        capa.addLayer(m);
+    });
+}
+
+function fijarPuntos(nuevos) { puntos = nuevos; firmaActual = ''; pintarPuntos(); }
+
+function normalizarProducto(d) {
+    // El JSON inicial y la respuesta AJAX no tienen la misma forma: el primero
+    // trae lat/lng planos y el segundo los anida en d.mayorista. Se aceptan
+    // ambas para que el marcador no caiga en (NaN, NaN).
+    const m = d.mayorista || {};
+    const lat = d.lat !== undefined ? d.lat : (m.latitud !== undefined ? m.latitud : d.latitud);
+    const lng = d.lng !== undefined ? d.lng : (m.longitud !== undefined ? m.longitud : d.longitud);
+
+    return {
+        lat: Number(lat),
+        lng: Number(lng),
+        nombre: d.nombre || '',
+        mayo: d.mayo || m.nombre || '',
+        precio: d.precio !== undefined ? d.precio : (d.precio_base !== undefined ? Number(d.precio_base).toFixed(2) : ''),
+        dist: d.dist !== undefined ? d.dist : (d.distancia_km !== undefined ? Number(d.distancia_km).toFixed(1) : ''),
+        categoria: d.categoria || ''
+    };
+}
+
+function puntosProductos(lista) {
+    return lista.map((d, i) => {
+        const n = normalizarProducto(d);
+        return {
+            lat: n.lat, lng: n.lng, idx: i, titulo: String(n.nombre), icono: iconoProducto,
+            popup: '<strong>' + esc(n.nombre) + '</strong><br>' + esc(n.mayo) + '<br>$' + n.precio + ' · ' + n.dist + ' km<br><small>' + esc(n.categoria) + '</small>'
+        };
+    }).filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+}
+
+function puntosCategorias() {
+    return categorias.map(cat => ({
+        lat: Number($lat), lng: Number($lng), idx: -1, titulo: String(cat.nombre),
+        icono: iconosCategoria[cat.nombre] || iconoDefault,
+        popup: '<strong>' + esc(cat.nombre) + '</strong><br>Productos disponibles en esta categoría'
+    }));
+}
 
 // Iconos por categoría para los marcadores generales del mapa.
 const iconosCategoria = {
@@ -384,22 +486,10 @@ leyenda.onAdd = function () {
 };
 
 if (datos.length === 0 && categorias.length > 0) {
-    // Sin resultados de búsqueda: mostrar marcadores de categorías generales.
     leyenda.addTo(mapa);
-    categorias.forEach(cat => {
-        const icono = iconosCategoria[cat.nombre] || iconoDefault;
-        const m = L.marker([{$lat}, {$lng}], { icon: icono }).addTo(mapa);
-        m.bindPopup('<strong>' + cat.nombre + '</strong><br>Productos disponibles en esta categoría');
-        marcadores.push(m);
-    });
+    fijarPuntos(puntosCategorias());
 } else {
-    // Con búsqueda activa o resultados: mostrar marcadores de productos.
-    datos.forEach((d, i) => {
-        const m = L.marker([d.lat, d.lng], { icon: iconoProducto }).addTo(mapa);
-        m.bindPopup('<strong>' + d.nombre + '</strong><br>' + d.mayo + '<br>$' + d.precio + ' · ' + d.dist + ' km<br><small>' + (d.categoria || '') + '</small>');
-        m.on('click', () => resaltar(i, false));
-        marcadores.push(m);
-    });
+    fijarPuntos(puntosProductos(datos));
 }
 
 function resaltar(i, centrar) {
@@ -412,7 +502,8 @@ function resaltar(i, centrar) {
             mapa.setView([parseFloat(ficha.dataset.lat), parseFloat(ficha.dataset.lng)], 14);
         }
     }
-    if (marcadores[i]) marcadores[i].openPopup();
+    const marcador = mapaDeMarcadores.get(i);
+    if (marcador) marcador.openPopup();
 }
 
 document.querySelectorAll('.ficha').forEach(f => {
@@ -547,21 +638,66 @@ document.querySelectorAll('.filtros select').forEach(sel => {
 
 // --- Búsqueda AJAX sin recargar la página -------------------------------
 function buscarAJAX(filtros) {
-    const params = new URLSearchParams(filtros).toString();
-    return fetch('/buscar/productos?' + params, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    const params = filtros instanceof URLSearchParams ? filtros.toString() : new URLSearchParams(filtros).toString();
+
+    // Cancelar la petición anterior: si el usuario mueve el mapa rápido, la
+    // respuesta vieja ya no puede pisar a la nueva.
+    if (peticionActual) peticionActual.abort();
+    const control = new AbortController();
+    peticionActual = control;
+
+    marcarCargando(true);
+
+    return fetch('/busqueda/productos?' + params, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        signal: control.signal
     }).then(r => r.json()).then(d => {
-        if (!d.ok) return null;
+        if (control.signal.aborted) return null;
+        if (!d.ok) {
+            avisar(d.error && d.error.message ? d.error.message : 'No se pudo buscar en esta zona.', control);
+            return null;
+        }
         return d.data;
-    }).catch(() => null);
+    }).catch(() => null).finally(() => {
+        if (peticionActual === control) { peticionActual = null; marcarCargando(false); }
+    });
+}
+
+function avisar(texto, control) {
+    let caja = document.getElementById('aviso-mapa');
+    if (!caja) {
+        caja = document.createElement('div');
+        caja.id = 'aviso-mapa';
+        caja.className = 'aviso-mapa';
+        document.getElementById('mapa').appendChild(caja);
+    }
+    caja.textContent = texto;
+    caja.hidden = false;
+    clearTimeout(caja._t);
+    caja._t = setTimeout(() => { caja.hidden = true; }, 4000);
+}
+
+function marcarCargando(activo) {
+    const cont = document.querySelector('.buscador__resultados');
+    if (cont) cont.classList.toggle('cargando', activo);
+    const mapaEl = document.getElementById('mapa');
+    if (mapaEl) mapaEl.classList.toggle('cargando', activo);
+}
+
+function paramsFiltros(lat, lng) {
+    const p = new URLSearchParams();
+    p.set('q', filtros.q);
+    p.set('categoria_id', filtros.categoria_id);
+    p.set('radio', filtros.radio);
+    p.set('orden', filtros.orden);
+    p.set('lat', lat);
+    p.set('lng', lng);
+    return p;
 }
 
 function actualizarMapaYResultados(data) {
     if (!data) return;
 
-    // Limpiar marcadores existentes.
-    marcadores.forEach(m => mapa.removeLayer(m));
-    marcadores.length = 0;
 
     // Actualizar contador.
     const contador = document.querySelector('.buscador__contador');
@@ -573,17 +709,17 @@ function actualizarMapaYResultados(data) {
     const contenedor = document.querySelector('.buscador__resultados');
     if (contenedor) {
         const fichas = data.resultados.map((r, i) => {
-            const dist = number_format((float) r.distancia_km, 1);
-            const stock = (int) r.stock_disponible;
-            const minimo = (int) r.cantidad_minima;
-            const paso = max(1, (int) r.multiplo_venta);
+            const dist = Number(r.distancia_km).toFixed(1);
+            const stock = parseInt(r.stock_disponible, 10) || 0;
+            const minimo = parseInt(r.cantidad_minima, 10) || 1;
+            const paso = Math.max(1, parseInt(r.multiplo_venta, 10) || 1);
             let html = '<article class="ficha" data-i="' + i + '" data-lat="' + esc(r.mayorista.latitud) + '" data-lng="' + esc(r.mayorista.longitud) + '">'
                 + '<div class="ficha__izq">'
                 + '<h3>' + esc(r.nombre) + '</h3>'
                 + '<p class="ficha__prov">' + esc(r.mayorista.nombre)
                 + ' <span class="badge">' + esc(r.categoria) + '</span>'
                 + '<a class="ficha__ver" href="/mayoristas/' + esc(r.mayorista.uuid) + '">Ver mayorista</a></p>'
-                + '<div class="ficha__precio">$' + number_format((float) r.precio_base, 2)
+                + '<div class="ficha__precio">$' + Number(r.precio_base).toFixed(2)
                 + '<span>+ IVA · ' + esc(r.unidad_venta) + ' de ' + esc(r.contenido) + '</span></div>'
                 + '</div>'
                 + '<div class="ficha__der">'
@@ -634,23 +770,15 @@ function actualizarMapaYResultados(data) {
         });
     }
 
-    // Actualizar marcadores del mapa.
+    // Actualizar marcadores del mapa (reutiliza la capa existente).
     if (data.resultados.length > 0) {
-        data.resultados.forEach((d, i) => {
-            const m = L.marker([d.lat, d.lng], { icon: iconoProducto }).addTo(mapa);
-            m.bindPopup('<strong>' + d.nombre + '</strong><br>' + d.mayo + '<br>$' + d.precio + ' · ' + d.dist + ' km<br><small>' + (d.categoria || '') + '</small>');
-            m.on('click', () => resaltar(i, false));
-            marcadores.push(m);
-        });
+        leyenda.remove();
+        fijarPuntos(puntosProductos(data.resultados));
     } else if (categorias.length > 0) {
-        // Sin resultados: mostrar marcadores de categorías generales.
-        leyenda.addTo(mapa);
-        categorias.forEach(cat => {
-            const icono = iconosCategoria[cat.nombre] || iconoDefault;
-            const m = L.marker([mapa.getCenter().lat, mapa.getCenter().lng], { icon: icono }).addTo(mapa);
-            m.bindPopup('<strong>' + cat.nombre + '</strong><br>Productos disponibles en esta categoría');
-            marcadores.push(m);
-        });
+        if (!mapa.hasLayer(leyenda)) leyenda.addTo(mapa);
+        fijarPuntos(puntosCategorias());
+    } else {
+        fijarPuntos([]);
     }
 }
 
@@ -717,18 +845,14 @@ mapa.on('moveend', () => {
     centroPrevio = c;
     clearTimeout(temporizador);
     temporizador = setTimeout(() => {
-        const params = new URLSearchParams();
-        params.set('q', filtros.q);
-        params.set('categoria_id', filtros.categoria_id);
-        params.set('radio', filtros.radio);
-        params.set('orden', filtros.orden);
-        params.set('lat', c.lat.toFixed(6));
-        params.set('lng', c.lng.toFixed(6));
-        buscarAJAX(params).then(data => {
+        buscarAJAX(paramsFiltros(c.lat.toFixed(6), c.lng.toFixed(6))).then(data => {
             if (data) actualizarMapaYResultados(data);
         });
-    }, 600);
+    }, 420);
 });
+
+// Al cambiar el zoom se reagrupan los marcadores sin pedir datos de nuevo.
+mapa.on('zoomend', () => { firmaActual = ''; pintarPuntos(); });
 JS;
 
 require __DIR__ . '/../layout.php';
