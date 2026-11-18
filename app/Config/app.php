@@ -139,7 +139,7 @@ $kyc = new KycService(
 
 $avatares = new \App\Modules\Perfil\AvatarService($pdo, __DIR__ . '/../../storage/avatars');
 
-$perfil = new PerfilController($perfiles, $kyc, $avatares, __DIR__ . '/../Views');
+$perfil = new PerfilController($perfiles, $kyc, $avatares, __DIR__ . '/../Views', $auditoria);
 
 $productos = new ProductoRepository($pdo);
 $catalogo = new CatalogoController(
@@ -170,6 +170,11 @@ $router->post('/perfil/avatar', [$perfil, 'subirAvatar'], [$seguridad, new AuthR
 $router->post('/perfil/avatar/quitar', [$perfil, 'quitarAvatar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/avatar/{id:\d+}', [$perfil, 'avatar'], [$seguridad]);
 $router->post('/perfil/direccion', [$perfil, 'guardarDireccion'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->get('/perfil/editar', [$perfil, 'editarForm'], [$seguridad, new AuthRequired()]);
+$router->post('/perfil/editar', [$perfil, 'editar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->get('/perfil/privacidad', [$perfil, 'privacidad'], [$seguridad, new AuthRequired()]);
+$router->post('/perfil/privacidad', [$perfil, 'guardarPrivacidad'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->post('/perfil/eliminar', [$perfil, 'eliminar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/kyc', [$perfil, 'kycForm'], [$seguridad, new AuthRequired()]);
 $router->post('/kyc', [$perfil, 'subirKyc'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 
@@ -357,6 +362,12 @@ $router->post('/postmvp/licitaciones', [$postmvp, 'crearLicitacion'], [$segurida
 $router->post('/postmvp/licitaciones/{id:\d+}/cotizar', [$postmvp, 'cotizarLicitacion'], [...$soloComercio, new CsrfProtect()]);
 
 // --- Aviso de privacidad -------------------------------------------------
+$router->get('/terminos', function (): Response {
+    $nonce = base64_encode(random_bytes(16));
+    $vista = new View(__DIR__ . '/../Views', $nonce);
+    return Response::html($vista->render('terminos', ['nonce' => $nonce, 'csrf' => Csrf::token()]))->withNonce($nonce);
+});
+
 $router->get('/aviso-privacidad', function (): Response {
     $nonce = base64_encode(random_bytes(16));
     $vista = new View(__DIR__ . '/../Views', $nonce);

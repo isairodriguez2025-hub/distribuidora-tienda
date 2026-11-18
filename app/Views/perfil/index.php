@@ -1,94 +1,103 @@
 <?php
 /**
- * Perfil: identidad (foto), verificación, direcciones y sesión.
+ * Mi cuenta. Una ficha de identidad arriba, acciones de sesión en medio y el
+ * bloque "Más…" al final con privacidad, términos y baja de la cuenta.
  *
  * @var callable $e
  * @var string   $csrf
  * @var string   $rol
  * @var array|null $perfil
- * @var array    $direcciones
- * @var array    $kyc
  * @var array    $errores
  * @var string|null $avatarUrl
  * @var string|null $mensaje
  */
-$nombre = $perfil['nombre_negocio'] ?? $perfil['nombre_comercial'] ?? 'Mi negocio';
-$avatarUrl = $avatarUrl ?? null;
-$mensaje = $mensaje ?? null;
-$iniciales = \App\Modules\Perfil\AvatarService::iniciales((string) $nombre);
+$nombresRol = [
+    'admin_total'   => 'Administrador',
+    'admin_kyc'     => 'Administrador · KYC',
+    'admin_soporte' => 'Administrador · Soporte',
+    'admin_finanzas' => 'Administrador · Finanzas',
+    'comercio'      => 'Comercio',
+    'mayorista'     => 'Mayorista',
+    'repartidor'    => 'Repartidor',
+];
+$etiquetaRol = $nombresRol[$rol] ?? ucfirst(str_replace('_', ' ', $rol));
 
-$lista = '';
-foreach ($direcciones as $d) {
-    $lista .= '<li class="carta" style="margin-bottom:10px;padding:14px 16px">'
-        . '<strong>' . $e($d['calle']) . '</strong>'
-        . ($d['es_principal'] ? ' <span class="etiqueta">principal</span>' : '')
-        . '<div class="silencio">' . $e((string) $d['colonia']) . ' · ' . $e($d['ciudad'])
-        . ' (' . $e((string) $d['latitud']) . ', ' . $e((string) $d['longitud']) . ')</div></li>';
-}
-if ($lista === '') {
-    $lista = '<li class="silencio">Todavía no tienes direcciones guardadas.</li>';
-}
-
-$estadoKyc = $kyc['completo']
-    ? '<p><span class="etiqueta etiqueta--ok">Verificación completa</span></p>'
-    : '<p><span class="etiqueta etiqueta--alerta">Faltan ' . count($kyc['faltantes']) . ' documento(s)</span> '
-      . '<a href="/kyc">Completar verificación</a></p>';
+$nombre = (string) ($perfil['nombre_negocio'] ?? $perfil['nombre_comercial'] ?? $perfil['nombre'] ?? 'Mi cuenta');
+$correo = (string) ($perfil['email'] ?? '');
 
 $foto = $avatarUrl !== null
-    ? '<img class="avatar-editor__foto" src="' . $e($avatarUrl) . '" alt="Tu foto de perfil" width="96" height="96">'
-    : '<span class="avatar-editor__iniciales" aria-hidden="true">' . $e($iniciales) . '</span>';
+    ? '<img class="ficha__foto" src="' . $e($avatarUrl) . '" alt="" width="88" height="88">'
+    : '<span class="ficha__iniciales" aria-hidden="true">' . $e(\App\Modules\Perfil\AvatarService::iniciales($nombre)) . '</span>';
 
-$contenido = ($mensaje !== null ? '<div class="aviso aviso--ok" style="margin-bottom:16px">' . $e($mensaje) . '</div>' : '')
-    . (isset($errores['avatar']) ? '<div class="aviso aviso--error" style="margin-bottom:16px">' . $e($errores['avatar']) . '</div>' : '')
-    . '<h1>Mi cuenta</h1>'
-    . '<p class="silencio">' . $e($nombre) . ' · ' . $e(str_replace('_', ' ', $rol)) . '</p>'
+$aviso = '';
+if (isset($_GET['ok']) && $_GET['ok'] === 'datos') {
+    $aviso = '<div class="aviso aviso--ok" role="status">Tus datos se guardaron.</div>';
+} elseif (isset($_GET['error']) && $_GET['error'] === 'confirmacion') {
+    $aviso = '<div class="aviso aviso--error" role="alert">Para eliminar la cuenta escribe ELIMINAR.</div>';
+} elseif ($mensaje !== null) {
+    $aviso = '<div class="aviso aviso--ok" role="status">' . $e($mensaje) . '</div>';
+}
 
-    . '<section class="carta" style="margin-top:20px">'
-    . '<h2 style="margin-top:0">Foto de perfil</h2>'
-    . '<div class="avatar-editor">'
-    . $foto
-    . '<div style="flex:1;min-width:220px">'
-    . '<form method="post" action="/perfil/avatar" enctype="multipart/form-data">'
+$contenido = '<div class="cuenta">'
+    . $aviso
+
+    // ---------------------------------------------------------- ficha
+    . '<section class="ficha" aria-labelledby="ficha-nombre">'
+    . '<div class="ficha__foto-caja">' . $foto . '</div>'
+    . '<div class="ficha__datos">'
+    . '<h1 class="ficha__nombre" id="ficha-nombre">' . $e($nombre) . '</h1>'
+    . '<span class="chip chip--rol">' . $e($etiquetaRol) . '</span>'
+    . '<p class="ficha__correo">' . $e($correo) . '</p>'
+    . '</div>'
+    . '<a class="boton ficha__editar" href="/perfil/editar">'
+    . '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    . '<path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>'
+    . 'Editar</a>'
+    . '</section>'
+
+    // --------------------------------------------------- acciones de sesión
+    . '<div class="cuenta__acciones">'
+    . '<a class="boton boton--claro boton--accion" href="/kyc">'
+    . '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    . '<path d="M12 2 4 5v6c0 5 3.4 9.2 8 11 4.6-1.8 8-6 8-11V5Z"></path><path d="m9 12 2 2 4-4"></path></svg>'
+    . '<span><strong>Verificación de cuenta</strong><small>Documentos e identidad</small></span>'
+    . '<span class="cuenta__flecha" aria-hidden="true">›</span></a>'
+
+    . '<form method="post" action="/logout" class="cuenta__form">'
     . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
-    . '<label class="campo"><span>JPG, PNG o WebP · máximo 2 MB</span>'
-    . '<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" required></label>'
-    . '<button type="submit">Guardar foto</button>'
-    . '</form>'
-    . ($avatarUrl !== null
-        ? '<form method="post" action="/perfil/avatar/quitar" style="margin-top:8px">'
-          . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
-          . '<button type="submit" class="boton--claro" style="font-size:13px">Quitar foto</button></form>'
-        : '')
-    . '<p class="pista" style="margin-top:8px">Se recorta en cuadrado y se muestra junto a tu nombre en el menú.</p>'
-    . '</div></div></section>'
-
-    . '<div class="grid grid--2" style="margin-top:18px">'
-    . '<section class="carta"><h2 style="margin-top:0">Verificación</h2>' . $estadoKyc . '</section>'
-    . '<section class="carta"><h2 style="margin-top:0">Sesión</h2>'
-    . '<p class="silencio">Sal de este dispositivo cuando termines.</p>'
-    . '<form method="post" action="/logout">'
-    . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
-    . '<button type="submit" class="boton--claro">Cerrar sesión</button></form></section>'
+    . '<button type="submit" class="boton boton--claro boton--accion">'
+    . '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    . '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>'
+    . '<span><strong>Cerrar sesión</strong><small>Salir de este dispositivo</small></span>'
+    . '<span class="cuenta__flecha" aria-hidden="true">›</span></button></form>'
     . '</div>'
 
-    . '<section style="margin-top:24px"><h2>Direcciones</h2>'
-    . '<ul style="list-style:none;padding:0;margin:0">' . $lista . '</ul></section>'
+    // ------------------------------------------------------------- más…
+    . '<section class="cuenta__mas" aria-labelledby="mas-titulo">'
+    . '<h2 class="cuenta__mas-titulo" id="mas-titulo">Más…</h2>'
+    . '<a class="fila-opcion" href="/perfil/privacidad">'
+    . '<span>Privacidad</span><span class="fila-opcion__flecha" aria-hidden="true">›</span></a>'
+    . '<a class="fila-opcion" href="/terminos">'
+    . '<span>Términos y condiciones</span><span class="fila-opcion__flecha" aria-hidden="true">›</span></a>'
+    . '<button type="button" class="fila-opcion fila-opcion--peligro" data-abrir="baja-cuenta">'
+    . '<span>Eliminar cuenta</span><span class="fila-opcion__flecha" aria-hidden="true">›</span></button>'
+    . '</section>'
+    . '</div>'
 
-    . '<section class="carta" style="margin-top:20px"><h2 style="margin-top:0">Agregar dirección</h2>'
-    . (isset($errores['direccion']) ? '<p style="color:#b91c1c">' . $e($errores['direccion']) . '</p>' : '')
-    . '<form method="post" action="/perfil/direccion">'
+    // ------------------------------------------------- diálogo de baja
+    . '<dialog class="dialogo" id="baja-cuenta" aria-labelledby="baja-titulo">'
+    . '<form method="post" action="/perfil/eliminar">'
     . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
-    . '<label class="campo"><span>Calle y número</span><input name="calle" required></label>'
-    . '<div class="fila">'
-    . '<label class="campo"><span>Colonia</span><input name="colonia"></label>'
-    . '<label class="campo"><span>Ciudad</span><input name="ciudad" required></label>'
-    . '</div>'
-    . '<div class="fila">'
-    . '<label class="campo"><span>Latitud</span><input name="latitud" type="number" step="0.000001" required></label>'
-    . '<label class="campo"><span>Longitud</span><input name="longitud" type="number" step="0.000001" required></label>'
-    . '</div>'
-    . '<label style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" name="es_principal" value="1"> Marcar como principal</label>'
-    . '<button type="submit">Guardar dirección</button>'
-    . '</form></section>';
+    . '<h2 id="baja-titulo">Eliminar mi cuenta</h2>'
+    . '<p>Se borran tu foto, tus direcciones y el acceso. Los pedidos ya
+        realizados se conservan por obligaciones fiscales y de garantía.</p>'
+    . '<label class="campo"><span class="campo__etiqueta">Escribe <strong>ELIMINAR</strong> para confirmar</span>'
+    . '<input class="campo__control" name="confirmacion" required autocomplete="off" placeholder="ELIMINAR"></label>'
+    . '<label class="campo"><span class="campo__etiqueta">Motivo (opcional)</span>'
+    . '<input class="campo__control" name="motivo" maxlength="120" placeholder="Ya no lo necesito"></label>'
+    . '<div class="dialogo__acciones">'
+    . '<button type="button" class="boton boton--claro" data-cerrar>Cancelar</button>'
+    . '<button type="submit" class="boton boton--peligro">Eliminar definitivamente</button>'
+    . '</div></form></dialog>';
 
 require __DIR__ . '/../layout.php';

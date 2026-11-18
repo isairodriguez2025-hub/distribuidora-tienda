@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Perfil;
 
+use App\Core\AuditLogger;
 use App\Core\Csrf;
+use App\Core\Password;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
@@ -22,6 +24,7 @@ final class PerfilController
         private readonly KycService $kyc,
         private readonly AvatarService $avatares,
         private readonly string $directorioVistas,
+        private readonly ?AuditLogger $auditoria = null,
     ) {
     }
 
@@ -218,5 +221,168 @@ final class PerfilController
         $this->kyc->rechazar((int) $args['id'], $this->usuarioId(), $motivo, $peticion->ip());
 
         return Response::redirect('/admin/kyc');
+    }
+
+    // ------------------------------------------------------- editar cuenta
+
+    /** GET /perfil/editar */
+    public function editarForm(Request $peticion): Response
+    {
+        return $this->formularioEdicion([], []);
+    }
+
+    /** POST /perfil/editar */
+    public function editar(Request $peticion): Response
+    {
+        $id = $this->usuarioId();
+        $rol = $this->rol();
+        $cuenta = $this->repo->cuenta($id);
+
+        $datos = [
+            'nombre'          => trim((string) $peticion->input('nombre', '')),
+            'email'           => trim((string) $peticion->input('email', '')),
+            'telefono'        => trim((string) $peticion->input('telefono', '')),
+            'actual'          => (string) $peticion->input('password_actual', ''),
+            'nueva'           => (string) $peticion->input('password_nueva', ''),
+            'repetir'         => (string) $peticion->input('password_repetir', ''),
+            'calle'           => trim((string) $peticion->input('calle', '')),
+            'colonia'         => trim((string) $peticion->input('colonia', '')),
+            'ciudad'          => trim((string) $peticion->input('ciudad', '')),
+            'estado_mx'       => trim((string) $peticion->input('estado_mx', '')),
+            'cp'              => trim((string) $peticion->input('cp', '')),
+            'referencias'     => trim((string) $peticion->input('referencias', '')),
+        ];
+
+        $errores = [];
+
+        if ($datos['nombre'] === '' || mb_strlen($datos['nombre']) < 3) {
+            $errores['nombre'] = 'Escribe el nombre con el que quieres aparecer.';
+        }
+
+        if (!filter_var($datos['email'], FILTER_VALIDATE_EMAIL)) {
+            $errores['email'] = 'Ese correo no parece válido.';
+        } elseif ($this->repo->emailEnUso($datos['email'], $id)) {
+            $errores['email'] = 'Ya hay otra cuenta con ese correo.';
+        }
+
+        $cambiarClave = $datos['nueva'] !== '' || $datos['repetir'] !== '';
+
+        if ($cambiarClave) {
+            if (!Password::verificar($datos['actual'], (string) ($cuenta['password_hash'] ?? ''))) {
+                $errores['password_actual'] = 'La contraseña actual no coincide.';
+            }
+
+            if (mb_strlen($datos['nueva']) < Password::MINIMO) {
+                $errores['password_nueva'] = 'La contraseña nueva necesita al menos ' . Password::MINIMO . ' caracteres.';
+            } elseif ($datos['nueva'] !== $datos['repetir']) {
+                $errores['password_repetir'] = 'Las contraseñas nuevas no coinciden.';
+            }
+        }
+
+        if ($errores !== []) {
+            return $this->formularioEdicion($errores, $datos, 422);
+        }
+
+        $this->repo->actualizarCuenta($id, $rol, $datos['nombre'], $datos['email']);
+
+        if ($cambiarClave) {
+            $this->repo->cambiarPassword($id, Password::hash($datos['nueva']));
+            Csrf::regenerar();
+        }
+
+        if ($datos['calle'] !== '' && $datos['ciudad'] !== '') {
+            $this->repo->guardarPrincipal($id, [
+                'alias'        => 'Principal',
+                'calle'        => $datos['calle'],
+                'colonia'      => $datos['colonia'],
+                'ciudad'       => $datos['ciudad'],
+                'estado_mx'    => $datos['estado_mx'],
+                'cp'           => $datos['cp'],
+                'referencias'  => $datos['referencias'],
+                'latitud'      => (float) $peticion->input('latitud', 0),
+                'longitud'     => (float) $peticion->input('longitud', 0),
+                'es_principal' => true,
+            ]);
+        }
+
+        return Response::redirect('/perfil?ok=datos');
+    }
+
+    /** @param array<string,string> $errores */
+    private function formularioEdicion(array $errores, array $valores, int $estado = 200): Response
+    {
+        $id = $this->usuarioId();
+        $rol = $this->rol();
+        $perfil = $this->repo->perfil($id, $rol) ?? [];
+        $cuenta = $this->repo->cuenta($id);
+        $direcciones = $this->repo->listarDirecciones($id);
+        $principal = $direcciones[0] ?? [];
+
+        $valores = $valores + [
+            'nombre'      => (string) ($perfil['nombre_negocio'] ?? $perfil['nombre_comercial'] ?? $perfil['nombre'] ?? ''),
+            'email'       => (string) ($cuenta['email'] ?? ''),
+            'telefono'    => (string) ($cuenta['telefono'] ?? ''),
+            'calle'       => (string) ($principal['calle'] ?? ''),
+            'colonia'     => (string) ($principal['colonia'] ?? ''),
+            'ciudad'      => (string) ($principal['ciudad'] ?? ''),
+            'estado_mx'   => (string) ($principal['estado_mx'] ?? ''),
+            'cp'          => (string) ($principal['cp'] ?? ''),
+            'referencias' => (string) ($principal['referencias'] ?? ''),
+        ];
+
+        return $this->vista('perfil/editar', [
+            'titulo'      => 'Editar cuenta',
+            'rol'         => $rol,
+            'errores'     => $errores,
+            'valores'     => $valores,
+            'avatarUrl'   => AvatarService::url($id),
+            'tieneFoto'   => AvatarService::url($id) !== null,
+            'latitud'     => $principal['latitud'] ?? '',
+            'longitud'    => $principal['longitud'] ?? '',
+        ], $estado);
+    }
+
+    // ----------------------------------------------------------- privacidad
+
+    /** GET /perfil/privacidad */
+    public function privacidad(Request $peticion): Response
+    {
+        return $this->vista('perfil/privacidad', [
+            'titulo'        => 'Privacidad',
+            'preferencias'  => $this->repo->preferencias($this->usuarioId()),
+            'guardado'      => $peticion->query('ok', '') !== '',
+        ]);
+    }
+
+    /** POST /perfil/privacidad */
+    public function guardarPrivacidad(Request $peticion): Response
+    {
+        $this->repo->guardarPreferencias($this->usuarioId(), [
+            'sms'       => $peticion->input('sms') !== null,
+            'correo'    => $peticion->input('correo') !== null,
+            'ubicacion' => $peticion->input('ubicacion') !== null,
+        ]);
+
+        return Response::redirect('/perfil/privacidad?ok=1');
+    }
+
+    // -------------------------------------------------------------- eliminar
+
+    /** POST /perfil/eliminar */
+    public function eliminar(Request $peticion): Response
+    {
+        $confirmacion = trim((string) $peticion->input('confirmacion', ''));
+
+        if (mb_strtoupper($confirmacion) !== 'ELIMINAR') {
+            return Response::redirect('/perfil?error=confirmacion');
+        }
+
+        $id = $this->usuarioId();
+        $this->repo->eliminarCuenta($id, (string) $peticion->input('motivo', ''));
+        $this->auditoria?->log('cuenta_eliminada', $id, 'usuario', (string) $id, null, $peticion->ip());
+
+        Session::destruir();
+
+        return Response::redirect('/login?cuenta=eliminada');
     }
 }

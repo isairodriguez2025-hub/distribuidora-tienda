@@ -653,28 +653,16 @@ function buscarAJAX(filtros) {
         signal: control.signal
     }).then(r => r.json()).then(d => {
         if (control.signal.aborted) return null;
+        // Fuera de cobertura no se muestra nada flotante: se conservan los
+        // resultados anteriores y el usuario sigue viendo su búsqueda. El aviso
+        // emergente tapaba el mapa cada vez que se movía.
         if (!d.ok) {
-            avisar(d.error && d.error.message ? d.error.message : 'No se pudo buscar en esta zona.', control);
             return null;
         }
         return d.data;
     }).catch(() => null).finally(() => {
         if (peticionActual === control) { peticionActual = null; marcarCargando(false); }
     });
-}
-
-function avisar(texto, control) {
-    let caja = document.getElementById('aviso-mapa');
-    if (!caja) {
-        caja = document.createElement('div');
-        caja.id = 'aviso-mapa';
-        caja.className = 'aviso-mapa';
-        document.getElementById('mapa').appendChild(caja);
-    }
-    caja.textContent = texto;
-    caja.hidden = false;
-    clearTimeout(caja._t);
-    caja._t = setTimeout(() => { caja.hidden = true; }, 4000);
 }
 
 function marcarCargando(activo) {

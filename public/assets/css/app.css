@@ -803,21 +803,6 @@ main table { width: 100%; border-collapse: collapse; }
 .buscador__resultados.cargando { opacity: .55; transition: opacity .15s ease; }
 #mapa.cargando { transition: opacity .15s ease; }
 
-.aviso-mapa {
-    position: absolute;
-    left: 50%;
-    bottom: 18px;
-    transform: translateX(-50%);
-    z-index: 500;
-    background: rgba(20, 22, 20, .88);
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 999px;
-    font-size: 12.5px;
-    max-width: 90%;
-    text-align: center;
-}
-.aviso-mapa[hidden] { display: none !important; }
 
 /* ================================================================ acceso */
 body.auth {
@@ -949,3 +934,211 @@ main.auth {
 
 .marca__logo { border-radius: 7px; display: block; }
 .marca { display: inline-flex; align-items: center; gap: 9px; }
+
+/* ============================================================ mi cuenta */
+.cuenta, .editor, .ajustes, .legal { max-width: 720px; margin: 0 auto; }
+
+.ficha {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: #fff;
+    border: 1px solid var(--d-linea, #e6e4dd);
+    border-radius: 18px;
+    padding: 22px 22px;
+    box-shadow: 0 1px 2px rgba(20, 22, 20, .04);
+    margin-bottom: 14px;
+}
+.ficha__foto-caja { flex: 0 0 auto; }
+.ficha__foto, .ficha__iniciales {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: grid; place-items: center;
+}
+.ficha__iniciales {
+    background: linear-gradient(135deg, #1f4d3a, #2f6b51);
+    color: #fff; font-size: 30px; font-weight: 600; letter-spacing: .02em;
+}
+.ficha__datos { min-width: 0; flex: 1; }
+.ficha__nombre { margin: 0 0 6px; font-size: 21px; line-height: 1.2; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.ficha__correo { margin: 8px 0 0; font-size: 13.5px; color: #6b7280; overflow-wrap: anywhere; }
+.chip--rol {
+    display: inline-block;
+    background: #eef3f0;
+    color: #1f4d3a;
+    border: 1px solid #d6e3dc;
+    border-radius: 999px;
+    padding: 3px 11px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.ficha__editar { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; }
+
+.cuenta__acciones { display: grid; gap: 10px; margin-bottom: 26px; }
+.cuenta__form { margin: 0; }
+.boton--accion {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 14px 16px;
+    text-align: left;
+    background: #fff;
+    border: 1px solid #e6e4dd;
+    border-radius: 14px;
+    color: #14161a;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+.boton--accion:hover { border-color: #cfd6cf; box-shadow: 0 2px 8px rgba(20, 22, 20, .06); }
+.boton--accion svg { flex: 0 0 auto; color: #1f4d3a; }
+.boton--accion span:not(.cuenta__flecha) { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.boton--accion strong { font-size: 14.5px; font-weight: 600; }
+.boton--accion small { font-size: 12.5px; color: #6b7280; font-weight: 400; }
+.cuenta__flecha { color: #b6bcc4; font-size: 22px; line-height: 1; }
+
+.cuenta__mas {
+    background: #fff;
+    border: 1px solid #e6e4dd;
+    border-radius: 16px;
+    overflow: hidden;
+}
+.cuenta__mas-titulo { margin: 0; padding: 16px 18px 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #8b929c; }
+.fila-opcion {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 15px 18px;
+    background: none;
+    border: 0;
+    border-top: 1px solid #f0efea;
+    font: inherit;
+    font-size: 15px;
+    color: #14161a;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+}
+.fila-opcion:hover { background: #fafaf8; }
+.fila-opcion--peligro { color: #b3261e; font-weight: 600; }
+.fila-opcion--peligro .fila-opcion__flecha { color: #d99a95; }
+
+/* ------------------------------------------------------------- diálogos */
+.dialogo {
+    border: 0;
+    border-radius: 18px;
+    padding: 26px;
+    max-width: 440px;
+    width: calc(100% - 32px);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, .35);
+}
+.dialogo::backdrop { background: rgba(12, 13, 16, .55); backdrop-filter: blur(2px); }
+.dialogo h2 { margin: 0 0 10px; font-size: 19px; }
+.dialogo p { margin: 0 0 16px; font-size: 14px; color: #4b5563; line-height: 1.5; }
+.dialogo__acciones { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
+
+.boton--peligro { background: #b3261e; border-color: #b3261e; color: #fff; }
+.boton--peligro:hover { background: #97201a; }
+
+/* --------------------------------------------------------------- editor */
+.volver { display: inline-block; margin-bottom: 10px; font-size: 13.5px; color: #1f4d3a; text-decoration: none; }
+.volver:hover { text-decoration: underline; }
+.editor__bloque { margin-bottom: 14px; }
+.editor__avatar { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+.editor__foto, .editor__iniciales {
+    width: 96px; height: 96px; border-radius: 50%; object-fit: cover; flex: 0 0 auto;
+    display: grid; place-items: center;
+}
+.editor__iniciales { background: linear-gradient(135deg, #1f4d3a, #2f6b51); color: #fff; font-size: 34px; font-weight: 600; }
+.editor__avatar-acciones { flex: 1; min-width: 240px; }
+.editor__subida { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.boton--archivo { cursor: pointer; }
+.boton--archivo input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.boton--texto { background: none; border: 0; color: #b3261e; padding-left: 0; cursor: pointer; font: inherit; font-size: 13.5px; }
+.editor__doble { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.editor__tres { display: grid; grid-template-columns: 1fr 110px 1.2fr; gap: 14px; }
+.editor__acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.editor__acciones .boton, .editor__acciones .boton--claro { display: inline-flex; align-items: center; }
+
+/* ----------------------------------------------------------- privacidad */
+.ajustes__grupo { padding: 6px 18px 18px; margin-top: 14px; }
+.opcion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0efea;
+    cursor: pointer;
+}
+.opcion:last-of-type { border-bottom: 0; }
+.opcion__texto { display: flex; flex-direction: column; gap: 3px; }
+.opcion__texto strong { font-size: 15px; font-weight: 600; }
+.opcion__texto small { font-size: 12.5px; color: #6b7280; line-height: 1.4; max-width: 46ch; }
+.ajustes__acciones { display: flex; justify-content: flex-end; padding-top: 14px; }
+.ajustes__nota { font-size: 12.5px; color: #8b929c; line-height: 1.5; margin-top: 14px; }
+
+.switch { position: relative; flex: 0 0 auto; width: 48px; height: 28px; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
+.switch__pista {
+    position: absolute; inset: 0;
+    background: #d7dade;
+    border-radius: 999px;
+    transition: background .18s ease;
+}
+.switch__pista::after {
+    content: "";
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 22px; height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+    transition: transform .18s ease;
+}
+.switch input:checked + .switch__pista { background: #1f4d3a; }
+.switch input:checked + .switch__pista::after { transform: translateX(20px); }
+.switch input:focus-visible + .switch__pista { box-shadow: 0 0 0 3px rgba(31, 77, 58, .25); }
+
+/* --------------------------------------------------------------- legal */
+.legal h2 { font-size: 16px; margin: 22px 0 6px; }
+.legal p { font-size: 14px; line-height: 1.65; color: #374151; margin: 0; }
+
+/* El destello azul al tocar el carrito y otros botones redondos era el
+   resaltado táctil del navegador, no un elemento de la interfaz. */
+a, button, .boton, .carrito-boton, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+.carrito-boton:focus, .carrito-boton:focus-visible, a:focus:not(:focus-visible) { outline: none; }
+
+@media (max-width: 620px) {
+    .ficha { flex-wrap: wrap; }
+    .ficha__editar { width: 100%; justify-content: center; }
+    .editor__doble, .editor__tres { grid-template-columns: 1fr; }
+    .editor__acciones { flex-direction: column-reverse; }
+    .editor__acciones .boton, .editor__acciones .boton--claro { width: 100%; justify-content: center; }
+    .dialogo__acciones { flex-direction: column-reverse; }
+    .dialogo__acciones .boton { width: 100%; }
+}
+
+/* El botón flotante del carrito no debe mostrar ningún resaltado al tocarlo:
+   en Android eso era un cuadrado azul que aparecía y desaparecía encima del
+   círculo. Se conserva un anillo blanco solo para navegación con teclado. */
+.fab-carrito {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    outline: none;
+    border-radius: 50%;
+    overflow: hidden;
+    isolation: isolate;
+    -webkit-appearance: none;
+}
+.fab-carrito:focus { outline: none; }
+.fab-carrito:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.fab-carrito::selection, .fab-carrito *::selection { background: transparent; }

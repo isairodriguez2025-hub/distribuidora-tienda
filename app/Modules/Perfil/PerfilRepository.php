@@ -68,10 +68,19 @@ final class PerfilRepository
             return null;
         }
 
-        $stmt = $this->pdo->prepare("SELECT * FROM {$tabla} WHERE usuario_id = ? LIMIT 1");
+        // Se traen también los datos de la cuenta: la ficha de "Mi cuenta"
+        // muestra el correo y el nombre aunque el perfil del rol esté vacío.
+        $stmt = $this->pdo->prepare(
+            "SELECT p.*, u.email, u.telefono, u.nombre, u.avatar_ruta
+               FROM {$tabla} p
+               JOIN usuarios u ON u.id = p.usuario_id
+              WHERE p.usuario_id = ?
+              LIMIT 1"
+        );
         $stmt->execute([$usuarioId]);
+        $fila = $stmt->fetch();
 
-        return $stmt->fetch() ?: null;
+        return $fila !== false ? $fila : null;
     }
 
     public function guardarDireccion(int $usuarioId, array $datos): int
@@ -140,5 +149,144 @@ final class PerfilRepository
         }
 
         return false;
+    }
+
+    // ---------------------------------------------------------------- cuenta
+
+    public function emailEnUso(string $email, int $usuarioId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT 1 FROM usuarios WHERE email = ? AND id <> ? AND deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->execute([mb_strtolower(trim($email)), $usuarioId]);
+
+        return (bool) $stmt->fetchColumn();
+    }
+
+    /** Datos mínimos de la cuenta para la pantalla de edición. */
+    public function cuenta(int $usuarioId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, email, telefono, password_hash FROM usuarios WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->execute([$usuarioId]);
+
+        return $stmt->fetch() ?: [];
+    }
+
+    public function actualizarCuenta(int $usuarioId, string $rol, string $nombre, string $email): void
+    {
+        $this->pdo->prepare('UPDATE usuarios SET email = ?, nombre = ? WHERE id = ?')
+            ->execute([mb_strtolower(trim($email)), $nombre, $usuarioId]);
+
+        // El repartidor no tiene nombre en su perfil: su identidad es la cuenta.
+        if ($rol === 'repartidor') {
+            return;
+        }
+
+        $tabla = $rol === 'mayorista' ? 'mayoristas_perfil' : 'comercios_perfil';
+        $columna = $rol === 'mayorista' ? 'nombre_comercial' : 'nombre_negocio';
+
+        $stmt = $this->pdo->prepare("SELECT 1 FROM {$tabla} WHERE usuario_id = ? LIMIT 1");
+        $stmt->execute([$usuarioId]);
+
+        if ($stmt->fetchColumn() === false) {
+            $this->pdo->prepare("INSERT INTO {$tabla} (usuario_id, uuid, {$columna}) VALUES (?, UUID(), ?)")
+                ->execute([$usuarioId, $nombre]);
+
+            return;
+        }
+
+        $this->pdo->prepare("UPDATE {$tabla} SET {$columna} = ? WHERE usuario_id = ?")
+            ->execute([$nombre, $usuarioId]);
+    }
+
+    public function cambiarPassword(int $usuarioId, string $hash): void
+    {
+        $this->pdo->prepare('UPDATE usuarios SET password_hash = ? WHERE id = ?')
+            ->execute([$hash, $usuarioId]);
+    }
+
+    /** Una dirección principal por usuario; se reutiliza la existente. */
+    public function guardarPrincipal(int $usuarioId, array $d): void
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id FROM direcciones WHERE usuario_id = ? AND deleted_at IS NULL ORDER BY es_principal DESC, id ASC LIMIT 1'
+        );
+        $stmt->execute([$usuarioId]);
+        $id = $stmt->fetchColumn();
+
+        if ($id === false) {
+            $this->guardarDireccion($usuarioId, $d + ['es_principal' => true]);
+
+            return;
+        }
+
+        $this->pdo->prepare(
+            'UPDATE direcciones
+                SET alias = ?, calle = ?, colonia = ?, ciudad = ?, estado_mx = ?, cp = ?, referencias = ?
+              WHERE id = ? AND usuario_id = ?'
+        )->execute([
+            (string) ($d['alias'] ?? ''),
+            (string) ($d['calle'] ?? ''),
+            (string) ($d['colonia'] ?? ''),
+            (string) ($d['ciudad'] ?? ''),
+            (string) ($d['estado_mx'] ?? ''),
+            (string) ($d['cp'] ?? ''),
+            (string) ($d['referencias'] ?? ''),
+            (int) $id,
+            $usuarioId,
+        ]);
+    }
+
+    // ------------------------------------------------------------ privacidad
+
+    public function preferencias(int $usuarioId): array
+    {
+        $stmt = $this->pdo->prepare('SELECT sms, correo, ubicacion FROM preferencias_usuario WHERE usuario_id = ?');
+        $stmt->execute([$usuarioId]);
+        $fila = $stmt->fetch();
+
+        if ($fila === false) {
+            return ['sms' => 1, 'correo' => 1, 'ubicacion' => 1];
+        }
+
+        return ['sms' => (int) $fila['sms'], 'correo' => (int) $fila['correo'], 'ubicacion' => (int) $fila['ubicacion']];
+    }
+
+    public function guardarPreferencias(int $usuarioId, array $p): void
+    {
+        $this->pdo->prepare(
+            'INSERT INTO preferencias_usuario (usuario_id, sms, correo, ubicacion) VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE sms = VALUES(sms), correo = VALUES(correo), ubicacion = VALUES(ubicacion)'
+        )->execute([
+            $usuarioId,
+            (int) !empty($p['sms']),
+            (int) !empty($p['correo']),
+            (int) !empty($p['ubicacion']),
+        ]);
+    }
+
+    /**
+     * Baja lógica: la cuenta deja de existir para el sistema pero el histórico
+     * de pedidos y las obligaciones fiscales se conservan.
+     */
+    public function eliminarCuenta(int $usuarioId, string $motivo): void
+    {
+        $this->pdo->beginTransaction();
+
+        try {
+            $this->pdo->prepare(
+                "UPDATE usuarios SET deleted_at = NOW(), estado = 'eliminado', eliminado_motivo = ? WHERE id = ?"
+            )->execute([mb_substr($motivo, 0, 120), $usuarioId]);
+
+            $this->pdo->prepare('UPDATE direcciones SET deleted_at = NOW() WHERE usuario_id = ? AND deleted_at IS NULL')
+                ->execute([$usuarioId]);
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
     }
 }

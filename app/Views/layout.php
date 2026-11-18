@@ -445,6 +445,22 @@ if (medidor) {
     });
 }
 
+// Diálogos: se abren desde un botón y se cierran con Cancelar o Escape.
+document.querySelectorAll('[data-abrir]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        var dialogo = document.getElementById(boton.dataset.abrir);
+        if (!dialogo) return;
+        if (typeof dialogo.showModal === 'function') { dialogo.showModal(); }
+        else { dialogo.setAttribute('open', ''); }
+    });
+});
+document.querySelectorAll('dialog [data-cerrar]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        var dialogo = boton.closest('dialog');
+        if (dialogo) { dialogo.close(); }
+    });
+});
+
 // Menú de cuenta y navegación móvil.
 (function () {
     var boton = document.getElementById('cuenta-boton');
