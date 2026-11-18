@@ -17,6 +17,7 @@ final class MensajeController
 {
     public function __construct(
         private readonly MensajeService $servicio,
+        private readonly \App\Modules\Notificaciones\NotificacionService $avisos,
         private readonly string $directorioVistas,
     ) {
     }
@@ -52,15 +53,39 @@ final class MensajeController
             }
         }
 
-        return $this->vista('mensajes/index', [
-            'titulo'  => 'Mensajes',
+        $tab = (string) $peticion->query('tab', 'conversaciones');
+        if (!in_array($tab, ['conversaciones', 'notificaciones'], true)) {
+            $tab = 'conversaciones';
+        }
+
+        $respuesta = $this->vista('mensajes/index', [
+            'titulo'  => 'Centro de mensajes',
+            'tab'     => $tab,
             'hilos'   => $this->servicio->bandeja($usuarioId),
             'contactos' => $this->servicio->contactos($usuarioId),
             'hilo'    => $hilo,
             'error'   => $error,
             'esAdmin' => $this->servicio->esAdmin($usuarioId),
             'yo'      => $usuarioId,
+            'avisos'  => array_values(array_filter(
+                $this->avisos->bandeja($usuarioId, 50),
+                // La pestaña es de avisos del sitio: los mensajes ya se ven en
+                // Conversaciones y los códigos de recuperación no son noticias.
+                static function (array $a): bool {
+                    $tipo = (string) ($a['tipo'] ?? '');
+                    return !str_starts_with($tipo, 'mensaje_') && $tipo !== 'recuperacion';
+                }
+            )),
+            'eliminados' => (int) $peticion->query('eliminados', 0),
         ]);
+
+        // Se marcan leídas después de pintar, para que el aviso nuevo todavía
+        // salga resaltado la primera vez que se abre la pestaña.
+        if ($tab === 'notificaciones') {
+            $this->avisos->marcarLeidas($usuarioId);
+        }
+
+        return $respuesta;
     }
 
     public function enviar(Request $peticion): Response
@@ -114,5 +139,19 @@ final class MensajeController
         $mensajes = $this->servicio->nuevos($this->usuarioId(), $uuid, $desde);
 
         return Response::json(['ok' => true, 'data' => ['mensajes' => $mensajes]]);
+    }
+
+    /** POST /mensajes/eliminar */
+    public function eliminar(Request $peticion): Response
+    {
+        $uuids = $peticion->input('hilos', []);
+
+        if (!is_array($uuids)) {
+            $uuids = [$uuids];
+        }
+
+        $resultado = $this->servicio->ocultar($this->usuarioId(), $uuids);
+
+        return Response::redirect('/mensajes?eliminados=' . (int) ($resultado['total'] ?? 0));
     }
 }

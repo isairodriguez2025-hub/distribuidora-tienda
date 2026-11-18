@@ -40,6 +40,7 @@ final class MensajeRepository
               FROM conversaciones c
               JOIN conversacion_participantes p
                 ON p.conversacion_id = c.id AND p.usuario_id = ?
+             WHERE p.oculta = 0
              ORDER BY COALESCE(ultimo_at, c.created_at) DESC
         SQL;
 
@@ -264,5 +265,37 @@ final class MensajeRepository
         $stmt->execute([$usuarioId]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * Oculta conversaciones solo para quien las borra. La otra persona
+     * conserva su historial intacto.
+     *
+     * @param int[] $ids
+     */
+    public function ocultar(array $ids, int $usuarioId): int
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids), static fn (int $i): bool => $i > 0));
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        $marcas = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->pdo->prepare(
+            "UPDATE conversacion_participantes SET oculta = 1
+              WHERE usuario_id = ? AND conversacion_id IN ({$marcas})"
+        );
+        $stmt->execute(array_merge([$usuarioId], $ids));
+
+        return $stmt->rowCount();
+    }
+
+    /** Vuelve a mostrar un hilo oculto: si la otra persona escribe, reaparece. */
+    public function mostrar(int $conversacionId, int $usuarioId): void
+    {
+        $this->pdo->prepare(
+            'UPDATE conversacion_participantes SET oculta = 0 WHERE conversacion_id = ? AND usuario_id = ?'
+        )->execute([$conversacionId, $usuarioId]);
     }
 }

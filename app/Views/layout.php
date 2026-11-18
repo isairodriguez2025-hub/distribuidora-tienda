@@ -370,14 +370,21 @@ foreach ($enlaces as [$href, $texto]) {
                         <div class="cuenta__nombre"><?= $e($nombreCuenta) ?></div>
                         <div class="cuenta__rol"><?= $e(str_replace('_', ' ', (string) $rol)) ?></div>
                     </div>
-                    <a role="menuitem" href="/perfil">Mi perfil</a>
+                    <a role="menuitem" href="/perfil">
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path></svg>
+                        <span>Mi perfil</span></a>
                     <?php if ($rol === 'comercio'): ?>
-                        <a role="menuitem" href="/pedidos">Mis pedidos</a>
+                        <a role="menuitem" href="/pedidos">
+                            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>
+                            <span>Mis pedidos</span></a>
                     <?php elseif ($rol === 'mayorista'): ?>
-                        <a role="menuitem" href="/mayorista/pedidos">Pedidos recibidos</a>
+                        <a role="menuitem" href="/mayorista/pedidos">
+                            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>
+                            <span>Pedidos recibidos</span></a>
                     <?php endif; ?>
-                    <a role="menuitem" href="/mensajes">Mensajes</a>
-                    <a role="menuitem" href="/notificaciones">Avisos</a>
+                    <a role="menuitem" href="/mensajes">
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"></path></svg>
+                        <span>Mensajes</span></a>
                     <div class="cuenta__sep"></div>
                     <form method="post" action="/logout" style="margin:0">
                         <input type="hidden" name="_csrf" value="<?= $e(\App\Core\Csrf::token()) ?>">

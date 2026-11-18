@@ -128,6 +128,9 @@ final class MensajeService
         }
 
         $id = $this->repo->insertar((int) $hilo['id'], $usuarioId, $cuerpo);
+
+        // Escribir en un hilo que se había borrado lo devuelve a la lista.
+        $this->repo->mostrar((int) $hilo['id'], $usuarioId);
         $this->auditoria->log('mensaje_enviado', $usuarioId, 'conversacion', $uuid, [], $ip);
 
         $this->avisar((int) $hilo['id'], $usuarioId, $cuerpo, (string) $hilo['tipo'], $uuid);
@@ -243,5 +246,27 @@ final class MensajeService
                 $canales,
             );
         }
+    }
+
+    /**
+     * Borra conversaciones de la bandeja de este usuario.
+     *
+     * @param string[] $uuids
+     */
+    public function ocultar(int $usuarioId, array $uuids): array
+    {
+        $ids = [];
+
+        foreach ($uuids as $uuid) {
+            $hilo = $this->repo->porUuid(trim((string) $uuid));
+
+            if ($hilo !== null && $this->repo->esParticipante((int) $hilo['id'], $usuarioId)) {
+                $ids[] = (int) $hilo['id'];
+            }
+        }
+
+        $total = $this->repo->ocultar($ids, $usuarioId);
+
+        return ['ok' => true, 'total' => $total];
     }
 }

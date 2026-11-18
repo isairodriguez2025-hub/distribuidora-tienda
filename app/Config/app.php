@@ -280,15 +280,20 @@ $router->post('/pagos/webhook', [$webhooks, 'recibir'], [$seguridad]);
 $router->get('/internal/tick', [$tick, 'tick'], [$seguridad]);
 
 $avisosCtl = new NotificacionController($notificaciones, __DIR__ . '/../Views');
-$router->get('/notificaciones', [$avisosCtl, 'index'], [$seguridad, new AuthRequired()]);
+// Los avisos ahora viven en el centro de mensajes: las rutas viejas
+// redirigen para no romper marcadores.
+$router->get('/notificaciones', function (): Response {
+    return Response::redirect('/mensajes?tab=notificaciones');
+}, [$seguridad, new AuthRequired()]);
 
 // --- Mensajería interna ----------------------------------------------------
 $mensajesRepo = new \App\Modules\Mensajes\MensajeRepository($pdo);
 $mensajesSrv = new \App\Modules\Mensajes\MensajeService($mensajesRepo, $notificaciones, $auditoria);
-$mensajesCtl = new \App\Modules\Mensajes\MensajeController($mensajesSrv, __DIR__ . '/../Views');
+$mensajesCtl = new \App\Modules\Mensajes\MensajeController($mensajesSrv, $notificaciones, __DIR__ . '/../Views');
 
 $router->get('/mensajes', [$mensajesCtl, 'index'], [$seguridad, new AuthRequired()]);
 $router->post('/mensajes/enviar', [$mensajesCtl, 'enviar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->post('/mensajes/eliminar', [$mensajesCtl, 'eliminar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/mensajes/soporte', [$mensajesCtl, 'soporte'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/mensajes/directo', [$mensajesCtl, 'directo'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/mensajes/{uuid:[0-9a-fA-F-]{36}}/nuevos', [$mensajesCtl, 'nuevos'], [$seguridad, new AuthRequired()]);
