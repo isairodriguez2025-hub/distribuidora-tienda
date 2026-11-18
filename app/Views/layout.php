@@ -41,12 +41,17 @@ if ($usuario !== null) {
 
 $enlaces = [];
 if ($usuario !== null) {
-    $enlaces[] = ['/buscar', 'Buscar'];
+    $enlaces[] = ['/explorar', 'Explorar'];
 
     if ($rol === 'comercio') {
-        $enlaces[] = ['/pedidos', 'Pedidos'];
-        $enlaces[] = ['/favoritos', 'Favoritos'];
-        $enlaces[] = ['/programados', 'Programados'];
+        // Menú del comercio: las cuatro áreas de trabajo. El punto de venta
+        // vive en la tarjeta de Explorar para no llenar la barra.
+        $enlaces[] = ['/buscar', 'Buscar'];
+        $enlaces[] = ['/finanzas', 'Finanzas'];
+        $enlaces[] = ['/portafolio', 'Portafolio'];
+        $enlaces[] = ['/agendar', 'Agendar'];
+    } else {
+        $enlaces[] = ['/buscar', 'Buscar'];
     }
 
     if ($rol === 'mayorista') {
@@ -54,15 +59,12 @@ if ($usuario !== null) {
         $enlaces[] = ['/mayorista/pedidos', 'Pedidos'];
     }
 
-    $enlaces[] = ['/finanzas', 'Finanzas'];
-    $enlaces[] = ['/facturacion', 'Facturación'];
+    if ($rol !== 'comercio') {
+        $enlaces[] = ['/finanzas', 'Finanzas'];
+        $enlaces[] = ['/facturacion', 'Facturación'];
+    }
     if (in_array($rol, ['admin_total', 'admin_kyc', 'admin_soporte', 'admin_finanzas'], true)) {
         $enlaces[] = ['/admin', 'Admin'];
-    }
-    if ($rol === 'comercio') {
-        $enlaces[] = ['/pos/inventario', 'Inventario'];
-        $enlaces[] = ['/pos', 'Caja'];
-        $enlaces[] = ['/pos/ventas', 'Ventas'];
     }
     if (in_array($rol, ['admin_total', 'admin_kyc'], true)) {
         $enlaces[] = ['/admin/kyc', 'Verificaciones'];
@@ -90,31 +92,7 @@ if ($usuario !== null) {
  * Iconos de la barra lateral. Se dibujan con trazo y heredan el color, así
  * funcionan igual en claro y en oscuro sin duplicar archivos.
  */
-$iconoNav = static function (string $ruta): string {
-    $dibujos = [
-        '/buscar'             => '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path>',
-        '/pedidos'            => '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path>',
-        '/mayorista/pedidos'  => '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path>',
-        '/favoritos'          => '<path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 7a4 4 0 0 1 7 3.8C19 15.6 12 20 12 20Z"></path>',
-        '/programados'        => '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 11h18"></path>',
-        '/mayorista/productos' => '<path d="m21 8-9-5-9 5 9 5 9-5Z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path>',
-        '/finanzas'           => '<path d="M4 19V10M10 19V5M16 19v-6M22 19H2"></path>',
-        '/facturacion'        => '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"></path><path d="M9 8h6M9 12h6"></path>',
-        '/admin'              => '<path d="M12 2.5 4.5 5.5v5.9c0 5 3.2 9.1 7.5 10.6 4.3-1.5 7.5-5.6 7.5-10.6V5.5Z"></path>',
-        '/pos/inventario'     => '<path d="M3 7h18v13H3z"></path><path d="M3 7l2-4h14l2 4"></path><path d="M9 12h6"></path>',
-        '/pos'                => '<rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 7h8M8 11h8M8 15h4"></path>',
-        '/pos/ventas'         => '<path d="M4 4h16v16H4z"></path><path d="M8 9h8M8 13h5"></path>',
-        '/admin/kyc'          => '<circle cx="12" cy="12" r="9"></circle><path d="m8.5 12 2.4 2.4 4.6-4.6"></path>',
-        '/mensajes'           => '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"></path>',
-        '/perfil'             => '<circle cx="12" cy="8" r="3.6"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path>',
-    ];
-
-    $d = $dibujos[$ruta] ?? '<circle cx="12" cy="12" r="8"></circle>';
-
-    return '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"'
-        . ' stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-        . $d . '</svg>';
-};
+$iconoNav = static fn (string $ruta): string => \App\Core\Iconos::svg($ruta);
 
 $uriActual = (string) ($_SERVER['REQUEST_URI'] ?? '');
 
@@ -133,14 +111,14 @@ foreach ($enlaces as [$href, $texto]) {
 // Barra inferior del celular: cuatro accesos, siempre los mismos, para que no
 // cambien de sitio según el rol.
 $enlacePrincipal = match ($rol) {
-    'comercio'  => ['/pedidos', 'Pedidos'],
+    'comercio'  => ['/buscar', 'Buscar'],
     'mayorista' => ['/mayorista/pedidos', 'Pedidos'],
     'admin_total', 'admin_kyc', 'admin_soporte', 'admin_finanzas' => ['/admin', 'Admin'],
     default     => ['/buscar', 'Buscar'],
 };
 
 $inferior = [
-    ['/buscar', 'Buscar'],
+    ['/explorar', 'Explorar'],
     $enlacePrincipal,
     ['/mensajes', 'Mensajes'],
     ['/perfil', 'Cuenta'],
@@ -401,7 +379,7 @@ foreach ($inferior as [$href, $texto]) {
 <?php if (empty($auth)): ?>
 <?php if ($usuario !== null): ?>
 <aside class="lateral" id="nav-principal" aria-label="Menú principal">
-    <a class="lateral__marca" href="/buscar" aria-label="Ares, ir a la búsqueda">
+    <a class="lateral__marca" href="/explorar" aria-label="Ares, ir al inicio">
         <img class="lateral__logo" src="/assets/img/ares-logo.svg" alt="" width="38" height="38">
         <span class="lateral__nombre">Ares <em>· B2B</em></span>
     </a>
@@ -453,7 +431,7 @@ foreach ($inferior as [$href, $texto]) {
 <?php endif; ?>
 <header class="barra barra--movil">
     <div class="barra__interior">
-        <a class="marca" href="<?= $usuario !== null ? '/buscar' : '/login' ?>"><img class="marca__logo" src="/assets/img/ares-logo.svg" alt="" width="28" height="28">Ares <span>· B2B</span></a>
+        <a class="marca" href="<?= $usuario !== null ? '/explorar' : '/login' ?>"><img class="marca__logo" src="/assets/img/ares-logo.svg" alt="" width="28" height="28">Ares <span>· B2B</span></a>
     </div>
 </header>
 <?php endif; ?>

@@ -96,6 +96,59 @@ final class ProgramadosController
         return Response::redirect('/programados' . ($r['ok'] ? '?ok=1' : '?error=' . urlencode($r['mensaje'])));
     }
 
+
+    /** POST /agendar — lista con día y hora concretos. */
+    public function crearLista(Request $peticion): Response
+    {
+        $comercioId = $this->comercioId();
+
+        if ($comercioId === null) {
+            return Response::redirect('/perfil');
+        }
+
+        $items = [];
+        $uuids = (array) $peticion->input('producto', []);
+        $cantidades = (array) $peticion->input('cantidad', []);
+
+        foreach ($uuids as $i => $uuid) {
+            if ((string) $uuid !== '') {
+                $items[] = ['producto_uuid' => (string) $uuid, 'cantidad' => (int) ($cantidades[$i] ?? 1)];
+            }
+        }
+
+        $r = $this->servicio->crearLista(
+            $comercioId,
+            (string) $peticion->input('fecha', ''),
+            (string) $peticion->input('hora', '09:00'),
+            $items,
+        );
+
+        return Response::redirect('/agendar' . ($r['ok'] ? '?ok=1' : '?error=' . urlencode((string) $r['mensaje'])));
+    }
+
+    /** Vista nueva de Agendar, con las listas y el diálogo de alta. */
+    public function agendar(Request $peticion): Response
+    {
+        $comercioId = $this->comercioId();
+
+        if ($comercioId === null) {
+            return Response::redirect('/perfil');
+        }
+
+        return $this->vista('agendar/index', [
+            'titulo'     => 'Agendar',
+            'listas'     => $this->servicio->listar($comercioId),
+            'productos'  => $this->pdo->query(
+                "SELECT p.uuid, p.nombre, m.nombre_comercial AS mayorista, p.precio_base, p.cantidad_minima
+                   FROM productos p JOIN mayoristas_perfil m ON m.id = p.mayorista_id
+                  WHERE p.activo = 1 AND p.stock_disponible > 0 AND p.deleted_at IS NULL
+                  ORDER BY m.nombre_comercial, p.nombre LIMIT 200"
+            )->fetchAll() ?: [],
+            'mensaje'    => $peticion->query('ok') !== null ? 'Lista agendada.' : null,
+            'error'      => $peticion->query('error'),
+        ]);
+    }
+
     public function estado(Request $peticion, array $args): Response
     {
         $comercioId = $this->comercioId();

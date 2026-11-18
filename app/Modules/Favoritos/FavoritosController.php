@@ -56,6 +56,25 @@ final class FavoritosController
         ]);
     }
 
+
+    /** GET /portafolio — misma data que favoritos, vista de tarjetas. */
+    public function portafolio(Request $peticion): Response
+    {
+        $comercioId = $this->comercioId();
+
+        if ($comercioId === null) {
+            return Response::redirect('/perfil');
+        }
+
+        return $this->vista('portafolio/index', [
+            'titulo'      => 'Portafolio',
+            'favoritos'   => $this->favoritos->listar($comercioId),
+            'sugerencias' => $this->favoritos->sugerencias($comercioId),
+            'mensaje'     => $peticion->query('ok') !== null ? 'Listo.' : null,
+            'error'       => $peticion->query('error'),
+        ]);
+    }
+
     public function agregar(Request $peticion): Response
     {
         $comercioId = $this->comercioId();

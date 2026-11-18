@@ -103,6 +103,75 @@ final class ProgramadoService
         return $stmt->fetchAll() ?: [];
     }
 
+
+    /**
+     * Lista de pedido con fecha concreta (pantalla Agendar): el comercio elige
+     * el día y la hora en que quiere recibirla.
+     */
+    public function crearLista(int $comercioId, string $fecha, string $hora, array $items): array
+    {
+        $fecha = trim($fecha);
+        $hora = trim($hora);
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) !== 1) {
+            return ['ok' => false, 'mensaje' => 'Elige un día válido para la lista.'];
+        }
+
+        if (preg_match('/^\d{2}:\d{2}$/', $hora) !== 1) {
+            $hora = '09:00';
+        }
+
+        if (strtotime($fecha) < strtotime(date('Y-m-d'))) {
+            return ['ok' => false, 'mensaje' => 'La fecha ya pasó. Elige un día de hoy en adelante.'];
+        }
+
+        if ($items === []) {
+            return ['ok' => false, 'mensaje' => 'La lista necesita al menos un producto.'];
+        }
+
+        // El mayorista sale del primer producto: una lista es de un proveedor.
+        $buscar = $this->pdo->prepare(
+            'SELECT mayorista_id FROM productos WHERE uuid = ? LIMIT 1'
+        );
+        $buscar->execute([(string) $items[0]['producto_uuid']]);
+        $mayoristaId = (int) $buscar->fetchColumn();
+
+        if ($mayoristaId === 0) {
+            return ['ok' => false, 'mensaje' => 'No encontramos el producto elegido.'];
+        }
+
+        $this->pdo->beginTransaction();
+
+        try {
+            $this->pdo->prepare(
+                "INSERT INTO pedidos_programados
+                     (uuid, comercio_id, mayorista_id, frecuencia, dia_semana, hora, fecha_deseada, estado, proximo_envio)
+                 VALUES (?,?,?, 'unica', NULL, ?, ?, 'activa', ?)"
+            )->execute([
+                UsuarioRepository::uuid4(), $comercioId, $mayoristaId, $hora, $fecha, $fecha . ' ' . $hora . ':00',
+            ]);
+
+            $listaId = (int) $this->pdo->lastInsertId();
+
+            $insertar = $this->pdo->prepare(
+                'INSERT INTO pedidos_programados_items (programado_id, producto_id, cantidad)
+                 SELECT ?, id, ? FROM productos WHERE uuid = ? LIMIT 1'
+            );
+
+            foreach ($items as $item) {
+                $insertar->execute([$listaId, max(1, (int) ($item['cantidad'] ?? 1)), (string) ($item['producto_uuid'] ?? '')]);
+            }
+
+            $this->pdo->commit();
+
+            return ['ok' => true, 'id' => $listaId];
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+
+            return ['ok' => false, 'mensaje' => 'No se pudo guardar la lista.'];
+        }
+    }
+
     /**
      * Worker: prepara borradores 24 h antes.
      *

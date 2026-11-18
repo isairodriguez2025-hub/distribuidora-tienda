@@ -152,7 +152,7 @@ final class AuthController
             in_array('admin_total', $roles, true) => '/admin',
             in_array('mayorista', $roles, true)   => '/mayorista',
             in_array('repartidor', $roles, true)  => '/repartidor',
-            default                               => '/comercio',
+            default                               => '/explorar',
         };
     }
 

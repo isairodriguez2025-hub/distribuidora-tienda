@@ -291,6 +291,8 @@ $router->get('/notificaciones', function (): Response {
 $mensajesRepo = new \App\Modules\Mensajes\MensajeRepository($pdo);
 $mensajesSrv = new \App\Modules\Mensajes\MensajeService($mensajesRepo, $notificaciones, $auditoria);
 $mensajesCtl = new \App\Modules\Mensajes\MensajeController($mensajesSrv, $notificaciones, __DIR__ . '/../Views');
+$explorarCtl = new \App\Modules\Explorar\ExplorarController($pdo, __DIR__ . '/../Views');
+$finanzasCtl = new \App\Modules\Finanzas\FinanzasController($pdo, __DIR__ . '/../Views');
 
 $router->get('/mensajes', [$mensajesCtl, 'index'], [$seguridad, new AuthRequired()]);
 $router->post('/mensajes/enviar', [$mensajesCtl, 'enviar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
@@ -339,11 +341,18 @@ $router->get('/pedidos/{uuid:[0-9a-fA-F-]{36}}/seguimiento', [$trackingCtl, 'map
 $router->post('/pedidos/{uuid:[0-9a-fA-F-]{36}}/resena', [$confianza, 'resenar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/pedidos/{uuid:[0-9a-fA-F-]{36}}/mensaje', [$confianza, 'mensaje'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/pedidos/{uuid:[0-9a-fA-F-]{36}}/reclamo', [$confianza, 'reclamar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
-$router->get('/finanzas', [$confianza, 'finanzas'], [$seguridad, new AuthRequired()]);
+$router->get('/finanzas', static function (\App\Core\Request $peticion) use ($finanzasCtl, $confianza, $pdo): \App\Core\Response {
+    $stmt = $pdo->prepare('SELECT r.nombre FROM usuario_roles ur JOIN roles r ON r.id = ur.rol_id WHERE ur.usuario_id = ?');
+    $stmt->execute([(int) \App\Core\Session::obtener('user_id', 0)]);
+
+    return (string) $stmt->fetchColumn() === 'comercio'
+        ? $finanzasCtl->index($peticion)
+        : $confianza->finanzas($peticion);
+}, [$seguridad, new AuthRequired()]);
+$router->get('/finanzas/factura/{uuid:[0-9a-fA-F-]{36}}', [$finanzasCtl, 'factura'], [$seguridad, new AuthRequired()]);
 $router->get('/finanzas/export', [$confianza, 'exportar'], [$seguridad, new AuthRequired()]);
 
 // --- Facturación CFDI 4.0 ------------------------------------------------
-$router->get('/facturacion', [$facturacion, 'index'], [$seguridad, new AuthRequired()]);
 $router->post('/facturacion/datos', [$facturacion, 'guardarDatos'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/pedidos/{uuid:[0-9a-fA-F-]{36}}/factura', [$facturacion, 'facturar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/facturas/{uuid:[0-9a-fA-F-]{36}}/xml', [$facturacion, 'xml'], [$seguridad, new AuthRequired()]);
@@ -385,12 +394,28 @@ $router->get('/aviso-privacidad', function (): Response {
 });
 
 // --- Favoritos y programados ----------------------------------------------
-$router->get('/favoritos', [$favoritosCtl, 'index'], $soloComercio);
+$router->get('/explorar', [$explorarCtl, 'index'], [$seguridad, new AuthRequired()]);
+$router->get('/portafolio', [$favoritosCtl, 'portafolio'], $soloComercio);
+$router->post('/portafolio/agregar', [$favoritosCtl, 'agregar'], [...$soloComercio, new CsrfProtect()]);
+$router->post('/portafolio/quitar', [$favoritosCtl, 'quitar'], [...$soloComercio, new CsrfProtect()]);
+$router->get('/agendar', [$programadosCtl, 'agendar'], $soloComercio);
+$router->post('/agendar', [$programadosCtl, 'crearLista'], [...$soloComercio, new CsrfProtect()]);
+
+// Nombres anteriores: se conservan para no romper enlaces guardados.
+$router->get('/favoritos', static fn (): \App\Core\Response => \App\Core\Response::redirect('/portafolio'), [$seguridad, new AuthRequired()]);
+$router->get('/programados', static fn (): \App\Core\Response => \App\Core\Response::redirect('/agendar'), [$seguridad, new AuthRequired()]);
+$router->get('/facturacion', static function (\App\Core\Request $peticion) use ($facturacion, $pdo): \App\Core\Response {
+    $stmt = $pdo->prepare('SELECT r.nombre FROM usuario_roles ur JOIN roles r ON r.id = ur.rol_id WHERE ur.usuario_id = ?');
+    $stmt->execute([(int) \App\Core\Session::obtener('user_id', 0)]);
+
+    return (string) $stmt->fetchColumn() === 'comercio'
+        ? \App\Core\Response::redirect('/finanzas?tab=facturacion')
+        : $facturacion->index($peticion);
+}, [$seguridad, new AuthRequired()]);
 $router->post('/favoritos/agregar', [$favoritosCtl, 'agregar'], [...$soloComercio, new CsrfProtect()]);
 $router->post('/favoritos/quitar', [$favoritosCtl, 'quitar'], [...$soloComercio, new CsrfProtect()]);
 $router->post('/favoritos/recompra/{uuid:[0-9a-fA-F-]{36}}', [$favoritosCtl, 'recompra'], [...$soloComercio, new CsrfProtect()]);
 
-$router->get('/programados', [$programadosCtl, 'index'], $soloComercio);
 $router->post('/programados', [$programadosCtl, 'crear'], [...$soloComercio, new CsrfProtect()]);
 $router->post('/programados/{id:\d+}/{estado:activa|pausada|cancelada}', [$programadosCtl, 'estado'], [...$soloComercio, new CsrfProtect()]);
 $router->get('/pago/simulado/{referencia}', [$pagosCtl, 'mostrar'], [$seguridad, new AuthRequired()]);
@@ -417,7 +442,7 @@ $router->get('/mayoristas/{uuid:[0-9a-fA-F-]{36}}', [$busqueda, 'mayorista'], [$
 // --- Paneles de entrada ----------------------------------------------------
 // El login manda a /comercio, /mayorista, /admin o /repartidor según el rol.
 // Cada uno redirige a la pantalla real de ese rol.
-$router->get('/comercio', static fn (): Response => Response::redirect('/buscar'),
+$router->get('/comercio', static fn (): Response => Response::redirect('/explorar'),
     [$seguridad, new AuthRequired(), new RoleRequired(['comercio'])]);
 
 $router->get('/mayorista', static fn (): Response => Response::redirect('/mayorista/productos'),

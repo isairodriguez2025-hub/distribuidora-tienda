@@ -170,7 +170,7 @@ final class ConfianzaController
             $datos = array_merge($datos, ['tipo' => 'repartidor', 'resumen' => $r['resumen'], 'detalle' => $r['viajes']]);
         }
 
-        return $this->vista('finanzas/index', ['titulo' => 'Finanzas'] + $datos);
+        return $this->vista('finanzas/resumen', ['titulo' => 'Finanzas'] + $datos);
     }
 
     /** GET /finanzas/export */
