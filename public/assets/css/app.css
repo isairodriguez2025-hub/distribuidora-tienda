@@ -596,6 +596,8 @@ main table { width: 100%; border-collapse: collapse; }
     border: 1px solid var(--d-linea);
     border-radius: 12px;
     background: #fff;
+    /* el botón global del layout pinta el texto de blanco: aquí va oscuro */
+    color: var(--d-tinta);
     cursor: pointer;
     transition: transform .06s ease, box-shadow .12s ease, border-color .12s ease;
 }
@@ -783,7 +785,8 @@ main table { width: 100%; border-collapse: collapse; }
 
 /* [hidden] debe ganar a display:grid/flex de los componentes */
 .pos-modal[hidden] { display: none !important; }
-.pos__cambio[hidden], .campo[hidden], .prod[hidden] { display: none !important; }
+.pos__cambio[hidden], .campo[hidden], .prod[hidden],
+.pos__sin-buscar[hidden], .pos__grid[hidden], .pos__resultados[hidden] { display: none !important; }
 
 /* --------------------------------------------------- marcadores del mapa */
 .marker-cluster {
@@ -2160,3 +2163,24 @@ html[data-tema="oscuro"] .gasto-linea { background: #262B33; }
     .gasto-grafica { grid-template-columns: 38px 1fr; height: 160px; }
     .gasto-barras { gap: 3px; }
 }
+
+/* Caja: el catálogo solo aparece al buscar. */
+.pos__sin-buscar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+    padding: 56px 24px;
+    color: var(--d-gris);
+    border: 1px dashed #d9dcd4;
+    border-radius: 14px;
+    background: #fbfbf8;
+}
+.pos__sin-buscar svg { color: #b9c0b6; margin-bottom: 4px; }
+.pos__sin-buscar strong { font-size: 15px; color: var(--d-tinta); }
+.pos__sin-buscar span { font-size: 13px; max-width: 320px; line-height: 1.45; }
+.pos__resultados { margin: 10px 2px 0; font-size: 12.5px; color: var(--d-gris); }
+html[data-tema="oscuro"] .pos__sin-buscar { background: #12151A; border-color: #2A2F37; }
+html[data-tema="oscuro"] .pos__sin-buscar strong { color: #E7EAEE; }

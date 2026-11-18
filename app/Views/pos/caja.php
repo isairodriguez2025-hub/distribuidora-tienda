@@ -12,6 +12,16 @@
  */
 $ivaIncluido = (int) $ajustes['iva_incluido'] === 1;
 
+// Clave de búsqueda sin acentos: "cafe" debe encontrar "Café molido".
+$plano = static function (string $texto): string {
+    return strtr(strtolower($texto), [
+        'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u',
+        'à' => 'a', 'è' => 'e', 'ì' => 'i', 'ò' => 'o', 'ù' => 'u',
+        'â' => 'a', 'ê' => 'e', 'î' => 'i', 'ô' => 'o', 'û' => 'u',
+        'ñ' => 'n', 'ç' => 'c',
+    ]);
+};
+
 $tarjetas = '';
 
 foreach ($productos as $p) {
@@ -25,6 +35,7 @@ foreach ($productos as $p) {
         . ' data-tasa="' . number_format((float) $p['iva_tasa'], 4, '.', '') . '"'
         . ' data-stock="' . number_format((float) $p['stock'], 3, '.', '') . '"'
         . ' data-unidad="' . $e((string) $p['unidad']) . '"'
+        . ' data-clave="' . $e($plano((string) $p['nombre'] . ' ' . ($p['sku'] ?? '') . ' ' . ($p['codigo_barras'] ?? ''))) . '"'
         . ($agotado ? ' disabled' : '') . '>'
         . '<span class="prod__nombre">' . $e((string) $p['nombre']) . '</span>'
         . '<span class="prod__precio">$' . number_format((float) $p['precio_venta'], 2) . '</span>'
@@ -52,7 +63,18 @@ $contenido = '<div class="pos" data-iva-incluido="' . ($ivaIncluido ? '1' : '0')
     . '<p class="silencio" style="margin:2px 0 0">Turno abierto · vendido hoy $' . number_format($vendido, 2) . '</p></div>'
     . '<input type="search" id="pos-buscar" placeholder="Buscar producto o código…" autocomplete="off">'
     . '</div>'
-    . '<div class="pos__grid" id="pos-grid">' . $tarjetas . '</div>'
+    . '<div class="pos__sin-buscar" id="pos-vacio">'
+    . '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">'
+    . '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>'
+    . '<strong>Busca un producto</strong>'
+    . '<span>Escribe el nombre o la clave, o pasa el lector de código de barras.</span>'
+    . '</div>'
+    . '<div class="pos__grid" id="pos-grid" hidden>' . $tarjetas . '</div>'
+    . '<p class="pos__resultados" id="pos-resultados" hidden></p>'
+    . '<div class="pos__sin-buscar" id="pos-sin" hidden>'
+    . '<strong>Sin resultados</strong>'
+    . '<span>No hay productos que coincidan. Prueba con otra palabra.</span>'
+    . '</div>'
     . '</section>'
 
     . '<aside class="pos__ticket">'
@@ -215,12 +237,57 @@ $scripts = <<<'JS'
         pintar();
     });
 
-    buscador.addEventListener('input', function () {
-        var q = buscador.value.trim().toLowerCase();
+    // El catálogo no se despliega solo: aparece cuando se escribe algo.
+    var vacio = document.getElementById('pos-vacio');
+    var sin = document.getElementById('pos-sin');
+    var resultados = document.getElementById('pos-resultados');
+    var TOPE = 24;
+
+    function plano(t) {
+        return t.toLowerCase()
+            .replace(/[áàâä]/g, 'a').replace(/[éèêë]/g, 'e').replace(/[íìîï]/g, 'i')
+            .replace(/[óòôö]/g, 'o').replace(/[úùûü]/g, 'u').replace(/ñ/g, 'n').replace(/ç/g, 'c');
+    }
+
+    function filtrar() {
+        var q = plano(buscador.value.trim());
+        var total = 0;
+        var visibles = 0;
+
         [].forEach.call(grid.querySelectorAll('.prod'), function (el) {
-            el.hidden = q && el.dataset.nombre.toLowerCase().indexOf(q) === -1;
+            var clave = el.dataset.clave || el.dataset.nombre.toLowerCase();
+            var coincide = q !== '' && clave.indexOf(q) !== -1;
+
+            if (coincide) {
+                total++;
+            }
+
+            var mostrar = coincide && visibles < TOPE;
+            el.hidden = !mostrar;
+
+            if (mostrar) {
+                visibles++;
+            }
         });
-    });
+
+        grid.hidden = visibles === 0;
+        vacio.hidden = q !== '';
+        sin.hidden = q === '' || total > 0;
+
+        if (total === 0) {
+            resultados.hidden = true;
+            resultados.textContent = '';
+        } else {
+            resultados.hidden = false;
+            resultados.textContent = total > TOPE
+                ? 'Mostrando ' + TOPE + ' de ' + total + ' · escribe más para afinar'
+                : total + (total === 1 ? ' producto' : ' productos');
+        }
+    }
+
+    buscador.addEventListener('input', filtrar);
+    buscador.addEventListener('search', filtrar);
+    filtrar();
 
     metodo.addEventListener('change', pintar);
     recibido.addEventListener('input', pintar);
