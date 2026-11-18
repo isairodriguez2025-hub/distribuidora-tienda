@@ -1584,3 +1584,224 @@ html[data-tema="oscuro"] .msg-fila:has(.msg-sel:checked) .msg-hilo { background:
 .pagina-cabecera p { margin: 4px 0 0; font-size: 13.5px; color: #6b7280; }
 html[data-tema="oscuro"] .pagina-cabecera p { color: var(--gris); }
 @media (max-width: 620px) { .pagina-cabecera h1 { font-size: 23px; } }
+
+/* ================================================== barra lateral (PC/tablet)
+   Cerrada ocupa 76 px y solo muestra iconos; al pasar el cursor se abre a
+   240 px por encima del contenido, sin empujarlo. El ancho reservado en el
+   body es siempre el cerrado, así la página no salta al acercarse. */
+:root { --lat-cerrado: 76px; --lat-abierto: 240px; }
+
+.lateral {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--lat-cerrado);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 10px 12px;
+    background: #fff;
+    border-right: 1px solid var(--d-linea);
+    z-index: 70;
+    overflow: visible;
+    transition: width .18s ease, box-shadow .18s ease;
+}
+.lateral:hover,
+.lateral:focus-within {
+    width: var(--lat-abierto);
+    box-shadow: 0 0 44px rgba(16, 24, 20, .14);
+}
+
+.lateral__marca {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 6px 6px 14px;
+    text-decoration: none;
+    color: var(--d-tinta);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--d-linea);
+    margin-bottom: 8px;
+}
+.lateral__logo { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; }
+.lateral__nombre {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity .16s ease, transform .16s ease;
+}
+.lateral__nombre em { font-style: normal; font-weight: 500; color: var(--d-gris); font-size: 13px; }
+.lateral:hover .lateral__nombre,
+.lateral:focus-within .lateral__nombre { opacity: 1; transform: translateX(0); }
+
+.lateral__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+.lateral .nav-enlace {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    border-radius: 11px;
+    color: var(--d-gris);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 0;
+    white-space: nowrap;
+    transition: background .13s, color .13s;
+}
+.lateral .nav-enlace:hover { background: #f2f3f0; color: var(--d-tinta); }
+.lateral .nav-enlace.activo { background: var(--d-verde-suave); color: var(--d-verde); font-weight: 650; }
+.lateral .nav-enlace.activo .nav-enlace__icono { color: var(--d-verde); }
+
+.nav-enlace__icono { flex: 0 0 auto; display: grid; place-items: center; width: 24px; height: 24px; }
+.nav-enlace__texto {
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity .16s ease, transform .16s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.lateral:hover .nav-enlace__texto,
+.lateral:focus-within .nav-enlace__texto { opacity: 1; transform: translateX(0); }
+
+.nav-globo {
+    background: #b3261e;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+}
+
+/* --- cuenta al pie de la barra --- */
+.lateral__pie {
+    position: relative;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--d-linea);
+}
+.lateral__pie .cuenta { width: 100%; }
+.lateral__pie .cuenta__boton {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 6px;
+    border-color: transparent;
+    background: transparent;
+}
+.lateral__pie .cuenta__boton:hover { background: #f2f3f0; }
+.lateral__pie .cuenta__chevron { display: none; }
+.lateral__pie .cuenta__menu {
+    top: auto;
+    bottom: calc(100% + 8px);
+    left: 0;
+    right: auto;
+    min-width: 240px;
+}
+
+/* =========================================== barra inferior (celular) */
+.barra--movil { display: none; }
+.inferior { display: none; }
+
+body { padding-left: 0; }
+
+@media (max-width: 759px) {
+    .lateral { display: none; }
+    .barra--movil {
+        display: block;
+        background: #fff;
+        border-bottom: 1px solid var(--d-linea);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+    }
+    .barra--movil .barra__interior { padding: 8px 16px; }
+
+    .inferior {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        background: #fff;
+        border-top: 1px solid var(--d-linea);
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+        z-index: 70;
+        box-shadow: 0 -6px 20px -12px rgba(16, 24, 20, .35);
+    }
+    .inferior__item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 6px 2px;
+        border-radius: 10px;
+        color: var(--d-gris);
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.1;
+    }
+    .inferior__item.activo { color: var(--d-verde); }
+    .inferior__icono { position: relative; display: grid; place-items: center; width: 24px; height: 24px; }
+    .inferior__globo {
+        position: absolute;
+        top: -4px;
+        right: -8px;
+        background: #b3261e;
+        color: #fff;
+        font-size: 9.5px;
+        font-weight: 700;
+        min-width: 15px;
+        height: 15px;
+        padding: 0 4px;
+        border-radius: 999px;
+        display: inline-grid;
+        place-items: center;
+    }
+    main { padding-bottom: 92px; }
+    .fab-carrito { bottom: 84px; }
+}
+
+@media (min-width: 760px) {
+    /* Solo las pantallas con barra lateral; las de acceso no llevan. */
+    body:not(.auth) { padding-left: var(--lat-cerrado); }
+}
+
+/* --- oscuro --- */
+html[data-tema="oscuro"] .lateral { background: #12151A; border-right-color: #2A2F37; }
+html[data-tema="oscuro"] .lateral__marca { border-bottom-color: #2A2F37; color: var(--tinta); }
+html[data-tema="oscuro"] .lateral__nombre em { color: var(--gris); }
+html[data-tema="oscuro"] .lateral .nav-enlace { color: #9BA3AE; }
+html[data-tema="oscuro"] .lateral .nav-enlace:hover { background: #1B1F25; color: #fff; }
+html[data-tema="oscuro"] .lateral .nav-enlace.activo { background: #16211C; color: #7FC9A2; }
+html[data-tema="oscuro"] .lateral__pie { border-top-color: #2A2F37; }
+html[data-tema="oscuro"] .lateral__pie .cuenta__boton:hover { background: #1B1F25; }
+html[data-tema="oscuro"] .inferior,
+html[data-tema="oscuro"] .barra--movil { background: #12151A; border-color: #2A2F37; }
+html[data-tema="oscuro"] .inferior__item { color: #9BA3AE; }
+html[data-tema="oscuro"] .inferior__item.activo { color: #7FC9A2; }
+
+/* Centrado de la columna de iconos con la barra cerrada: 16px de sangría
+   dejan el icono justo en el eje de los 76px. */
+.lateral .nav-enlace { padding-left: 16px; }
+.lateral__marca { padding-left: 11px; }
+.lateral__pie .cuenta__boton { padding-left: 11px; }
