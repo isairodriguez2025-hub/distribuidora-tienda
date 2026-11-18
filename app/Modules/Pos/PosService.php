@@ -406,10 +406,16 @@ final class PosService
 
     private function siguienteFolio(int $usuarioId): int
     {
+        // Se toma el folio más alto del día, no el número de ventas: si alguna
+        // se borra, contar volvía a generar un folio ya usado y la venta fallaba.
+        $prefijo = 'POS-' . date('ymd') . '-';
+
         $stmt = Database::conexion()->prepare(
-            'SELECT COUNT(*) FROM pos_ventas WHERE usuario_id = ? AND DATE(created_at) = CURDATE()'
+            'SELECT COALESCE(MAX(CAST(SUBSTRING(folio, ?) AS UNSIGNED)), 0)
+               FROM pos_ventas
+              WHERE usuario_id = ? AND folio LIKE ?'
         );
-        $stmt->execute([$usuarioId]);
+        $stmt->execute([strlen($prefijo) + 1, $usuarioId, $prefijo . '%']);
 
         return (int) $stmt->fetchColumn() + 1;
     }

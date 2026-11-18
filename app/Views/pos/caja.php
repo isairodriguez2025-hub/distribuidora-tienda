@@ -28,6 +28,10 @@ foreach ($productos as $p) {
     $agotado = (float) $p['stock'] <= 0;
     $bajo = (float) $p['stock'] <= (float) $p['stock_minimo'];
 
+    $foto = trim((string) ($p['imagen'] ?? '')) !== ''
+        ? (string) $p['imagen']
+        : '/assets/img/productos/generico.svg';
+
     $tarjetas .= '<button type="button" class="prod' . ($agotado ? ' prod--agotado' : '') . '"'
         . ' data-id="' . (int) $p['id'] . '"'
         . ' data-nombre="' . $e((string) $p['nombre']) . '"'
@@ -37,11 +41,13 @@ foreach ($productos as $p) {
         . ' data-unidad="' . $e((string) $p['unidad']) . '"'
         . ' data-clave="' . $e($plano((string) $p['nombre'] . ' ' . ($p['sku'] ?? '') . ' ' . ($p['codigo_barras'] ?? ''))) . '"'
         . ($agotado ? ' disabled' : '') . '>'
+        . '<span class="prod__foto"><img src="' . $e($foto) . '" alt="" loading="lazy" width="200" height="200"></span>'
+        . '<span class="prod__texto">'
         . '<span class="prod__nombre">' . $e((string) $p['nombre']) . '</span>'
         . '<span class="prod__precio">$' . number_format((float) $p['precio_venta'], 2) . '</span>'
         . '<span class="prod__stock' . ($bajo ? ' prod__stock--bajo' : '') . '">'
         . ($agotado ? 'agotado' : number_format((float) $p['stock'], 2) . ' ' . $e((string) $p['unidad']))
-        . '</span></button>';
+        . '</span></span></button>';
 }
 
 if ($tarjetas === '') {
@@ -61,7 +67,11 @@ $contenido = '<div class="pos" data-iva-incluido="' . ($ivaIncluido ? '1' : '0')
     . '<div class="pos__barra">'
     . '<div><h1 style="margin:0">Caja</h1>'
     . '<p class="silencio" style="margin:2px 0 0">Turno abierto · vendido hoy $' . number_format($vendido, 2) . '</p></div>'
-    . '<input type="search" id="pos-buscar" placeholder="Buscar producto o código…" autocomplete="off">'
+    . '</div>'
+    . '<div class="pos__isla">'
+    . '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+    . '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>'
+    . '<input type="search" id="pos-buscar" placeholder="Buscar producto, clave o código…" autocomplete="off" enterkeyhint="search">'
     . '</div>'
     . '<div class="pos__sin-buscar" id="pos-vacio">'
     . '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">'

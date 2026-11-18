@@ -446,9 +446,12 @@ foreach ($inferior as [$href, $texto]) {
 <?php endif; ?>
 <?php
 $rolActual = is_array($roles) && $roles !== [] ? (string) $roles[0] : null;
-$enCarrito = str_starts_with((string) ($_SERVER['REQUEST_URI'] ?? ''), '/carrito');
+$rutaActual = (string) ($_SERVER['REQUEST_URI'] ?? '');
+$enCarrito = str_starts_with($rutaActual, '/carrito');
+// En la caja el carrito flotante estorba: ahí se cobra, no se compra.
+$enCaja = str_starts_with($rutaActual, '/pos');
 ?>
-<?php if ($usuario !== null && $rolActual === 'comercio' && !$enCarrito): ?>
+<?php if ($usuario !== null && $rolActual === 'comercio' && !$enCarrito && !$enCaja): ?>
     <?php $articulos = \App\Modules\Carrito\CarritoContador::paraUsuario((int) $usuario); ?>
     <a class="fab-carrito" href="/carrito" aria-label="Ir al carrito<?= $articulos > 0 ? ' (' . $articulos . ' artículos)' : '' ?>">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
