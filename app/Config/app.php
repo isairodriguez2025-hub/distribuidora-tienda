@@ -234,15 +234,16 @@ $confianza = new ConfianzaController(
     __DIR__ . '/../Views',
 );
 
-$worker = new Worker($pdo, $pedidoService, $notificaciones, $programadoService);
-$tick = new TickController($worker, (string) ($_ENV['WORKER_TOKEN'] ?? ''));
-
 $configPagos = require __DIR__ . '/pagos.php';
 $pasarela = new SimuladoGateway($configPagos['webhook_secret'], 300);
 $pagoService = new PagoService($pdo, $pedidoService, $pasarela, $auditoria, $configPagos);
 
 $tarifas = new TarifaService($pdo);
 $asignacion = new AsignacionService($pdo, $tarifas, $pedidoService);
+
+// El worker necesita la asignación para vencer ofertas: se construye después.
+$worker = new Worker($pdo, $pedidoService, $notificaciones, $programadoService, $asignacion);
+$tick = new TickController($worker, (string) ($_ENV['WORKER_TOKEN'] ?? ''));
 $pruebas = new PruebaEntregaService($pdo);
 
 $chatService = new ChatService($pdo);

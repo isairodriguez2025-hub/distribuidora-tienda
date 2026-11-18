@@ -24,11 +24,19 @@ $pdo = Database::nuevaConexion();
 
 $notificaciones = new NotificacionService($pdo, __DIR__ . '/../storage/correos');
 
+$pedidoService = new PedidoService($pdo, $notificaciones);
+$asignacion = new \App\Modules\Logistica\AsignacionService(
+    $pdo,
+    new \App\Modules\Logistica\TarifaService($pdo),
+    $pedidoService,
+);
+
 $worker = new Worker(
     $pdo,
-    new PedidoService($pdo, $notificaciones),
+    $pedidoService,
     $notificaciones,
     new ProgramadoService($pdo, new \App\Modules\Catalogo\PrecioService(), $notificaciones),
+    $asignacion,
 );
 
 $inicio = microtime(true);

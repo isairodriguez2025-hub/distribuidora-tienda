@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Jobs;
 
+use App\Modules\Logistica\AsignacionService;
 use App\Modules\Notificaciones\NotificacionService;
 use App\Modules\Pedidos\PedidoService;
 use PDO;
@@ -24,6 +25,7 @@ final class Worker
         private readonly PedidoService $pedidos,
         private readonly NotificacionService $notificaciones,
         private readonly ?\App\Modules\Programados\ProgramadoService $programados = null,
+        private readonly ?AsignacionService $asignacion = null,
     ) {
     }
 
@@ -38,6 +40,11 @@ final class Worker
 
         foreach ([
             'reservas_vencidas'      => fn () => $this->expirarReservas(),
+            // Sin esta tarea las ofertas de reparto no vencen nunca y las
+            // rondas 2 y 3 jamás llegan a lanzarse.
+            'ofertas_vencidas'       => fn () => $this->asignacion === null
+                ? 'sin servicio'
+                : json_encode($this->asignacion->procesarVencidas(), JSON_UNESCAPED_UNICODE),
             'pedidos_sin_respuesta'  => fn () => $this->expirarSinRespuesta(),
             'programados'            => fn () => $this->prepararProgramados(),
             'notificaciones'         => fn () => $this->enviarNotificaciones(),

@@ -8,6 +8,7 @@
  * @var array    $principal
  * @var array    $extra
  * @var array    $resumen
+ * @var array    $metricas
  */
 
 use App\Core\Iconos;
@@ -56,10 +57,25 @@ $bloqueAtajos = $atajos !== ''
     ? '<section class="explorar-atajos"><h2>Más herramientas</h2><div class="explorar-atajos__fila">' . $atajos . '</div></section>'
     : '';
 
+$fichasMetricas = '';
+foreach (($metricas ?? []) as $m) {
+    $fichasMetricas .= '<a class="metrica" href="' . $e((string) $m['href']) . '">'
+        . '<span class="metrica__valor">' . $e((string) $m['valor']) . '</span>'
+        . '<span class="metrica__etiqueta">' . $e((string) $m['etiqueta']) . '</span>'
+        . '<span class="metrica__nota">' . $e((string) ($m['nota'] ?? '')) . '</span>'
+        . '</a>';
+}
+
+$bloqueMetricas = $fichasMetricas !== ''
+    ? '<section class="explorar-metricas">' . $fichasMetricas . '</section>'
+    : '';
+
 $contenido = '<header class="explorar-saludo">'
     . '<h1>Hola, ' . $e($nombre) . '!</h1>'
     . '<p>¿Con qué empezamos hoy?</p>'
     . '</header>'
+
+    . $bloqueMetricas
 
     . '<section class="explorar-tarjeta">'
     . '<div class="explorar-grid">' . $botones . '</div>'
