@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Ares">
+  <defs>
+    <linearGradient id="plata" x1="0" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#FAFBFC"/>
+      <stop offset="0.30" stop-color="#DFE3E8"/>
+      <stop offset="0.58" stop-color="#A8AFB8"/>
+      <stop offset="0.82" stop-color="#868D96"/>
+      <stop offset="1" stop-color="#6B727B"/>
+    </linearGradient>
+    <linearGradient id="barra" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E4E8ED"/>
+      <stop offset="1" stop-color="#9BA2AB"/>
+    </linearGradient>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#191C21"/>
+      <stop offset="0.5" stop-color="#0C0D10"/>
+      <stop offset="1" stop-color="#040405"/>
+    </linearGradient>
+    <radialGradient id="brillo" cx="0.5" cy="0.22" r="0.68">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="sombra" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="104" fill="url(#fondo)"/>
+  <rect width="512" height="512" rx="104" fill="url(#brillo)"/>
+  <rect x="5" y="5" width="502" height="502" rx="100" fill="none" stroke="#2C3037" stroke-width="2"/>
+
+  <!-- Punta de lanza: nace del vértice y lo prolonga -->
+  <path d="M256 8 L279 70 L256 58 L233 70 Z" fill="url(#barra)" opacity="0.95"/>
+
+  <g filter="url(#sombra)">
+    <!-- Cuerpo de la A -->
+    <path d="M256 56 L396 440 L330 440 L256 200 L182 440 L116 440 Z"
+          fill="url(#plata)" stroke="#4B515A" stroke-width="2.5" stroke-linejoin="miter"/>
+    <!-- Travesaño a escuadra con los trazos -->
+    <path d="M163.7 312 L348.3 312 L366.2 360 L145.8 360 Z" fill="url(#barra)"/>
+    <!-- Filete de luz sobre el canto izquierdo -->
+    <path d="M256 56 L116 440" stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="2.5"/>
+    <!-- Sombra interior del travesaño -->
+    <path d="M145.8 360 L366.2 360" stroke="#000000" stroke-opacity="0.25" stroke-width="2"/>
+  </g>
+</svg>

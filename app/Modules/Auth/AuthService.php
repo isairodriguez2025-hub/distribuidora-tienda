@@ -28,6 +28,7 @@ final class AuthService
     public function __construct(
         private readonly UsuarioRepository $repo,
         private readonly AuditLogger $auditoria,
+        private readonly ?\App\Modules\Notificaciones\NotificacionService $notificaciones = null,
     ) {
     }
 
@@ -155,13 +156,23 @@ final class AuthService
         return true;
     }
 
-    /** @return array{ok: bool, mensaje: string, token: ?string} */
-    public function solicitarRecuperacion(string $email, string $ip): array
+    /**
+     * Acepta correo o teléfono. Siempre responde lo mismo y siempre tarda
+     * parecido, exista o no la cuenta.
+     *
+     * @return array{ok: bool, mensaje: string, token: ?string}
+     */
+    public function solicitarRecuperacion(string $identificador, string $ip): array
     {
-        $usuario = $this->repo->buscarPorEmail($email);
+        $identificador = trim($identificador);
+        $esCorreo = str_contains($identificador, '@');
+
+        $usuario = $esCorreo
+            ? $this->repo->buscarPorEmail($identificador)
+            : $this->repo->buscarPorTelefono($identificador);
 
         if ($usuario === null) {
-            Password::verificarFicticio($email);
+            Password::verificarFicticio($identificador);
 
             return ['ok' => true, 'mensaje' => self::MSG_RECUPERO, 'token' => null];
         }
@@ -170,9 +181,44 @@ final class AuthService
 
         $token = bin2hex(random_bytes(32));
         $this->repo->crearToken((int) $usuario['id'], 'recuperacion_pass', hash('sha256', $token), self::TTL_RECUPERO_MIN);
+
+        $enlace = '/restablecer?token=' . urlencode($token);
+        $codigo = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        if ($this->notificaciones !== null) {
+            $this->notificaciones->encolar(
+                (int) $usuario['id'],
+                'recuperacion',
+                'Recupera tu contraseña de Ares',
+                'Abre este enlace para elegir una contraseña nueva. Caduca en 30 minutos.\n\n'
+                    . 'Si no fuiste tú, ignora este mensaje: tu contraseña sigue igual.',
+                $enlace,
+                ['correo'],
+            );
+
+            $this->notificaciones->encolar(
+                (int) $usuario['id'],
+                'recuperacion',
+                'Código de recuperación Ares',
+                'Tu código de Ares es ' . $codigo . '. Caduca en 30 minutos.',
+                null,
+                ['sms'],
+            );
+
+            $this->notificaciones->enviarPendientes(10);
+        }
+
         $this->auditoria->log('recuperacion_solicitada', (int) $usuario['id'], 'usuario', (string) $usuario['id'], null, $ip);
 
-        return ['ok' => true, 'mensaje' => self::MSG_RECUPERO, 'token' => $token];
+        // En local se devuelve el token para poder probar sin servidor de
+        // correo; en producción nunca sale de aquí.
+        $entorno = strtolower((string) (getenv('APP_ENV') ?: 'production'));
+
+        return [
+            'ok'      => true,
+            'mensaje' => self::MSG_RECUPERO,
+            'token'   => $entorno === 'production' ? null : $token,
+        ];
     }
 
     public function restablecer(string $token, string $nueva): bool

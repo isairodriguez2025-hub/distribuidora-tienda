@@ -55,6 +55,16 @@ final class AuthController
             'rol'            => (string) $peticion->input('rol', 'comercio'),
         ];
 
+        $confirmacion = (string) $peticion->input('password_confirmacion', '');
+
+        if ($confirmacion !== '' && $confirmacion !== $datos['password']) {
+            return $this->vista('auth/registro', [
+                'titulo'  => 'Crear cuenta',
+                'errores' => ['password_confirmacion' => 'Las contraseñas no coinciden.'],
+                'valores' => $datos,
+            ], 422);
+        }
+
         $resultado = $this->servicio->registrar($datos, $peticion->ip());
 
         if (!$resultado['ok']) {
@@ -175,8 +185,8 @@ final class AuthController
     {
         Session::iniciar();
 
-        $email = (string) $peticion->input('email', '');
-        $resultado = $this->servicio->solicitarRecuperacion($email, $peticion->ip());
+        $identificador = (string) $peticion->input('identificador', $peticion->input('email', ''));
+        $resultado = $this->servicio->solicitarRecuperacion($identificador, $peticion->ip());
 
         return $this->vista('auth/recuperar', [
             'titulo'  => 'Recuperar contraseña',

@@ -1,38 +1,85 @@
 <?php
-/** @var callable $e */
-/** @var string $csrf */
-/** @var array<string,string> $errores */
-/** @var array<string,string> $valores */
-$campo = static function (string $nombre, string $etiqueta, string $tipo, array $valores, array $errores, callable $e): string {
-    $error = $errores[$nombre] ?? null;
-    $valor = $valores[$nombre] ?? '';
+/**
+ * Registro. Misma tarjeta que el login para que el paso entre ambas
+ * pantallas no se sienta como un salto de diseño.
+ *
+ * @var callable $e
+ * @var string   $csrf
+ * @var array<string,string> $errores
+ * @var array<string,string> $valores
+ */
+$auth = true;
 
-    return '<label style="display:block;margin-bottom:14px"><span style="font-size:13px;color:#4b5563">' . $e($etiqueta) . '</span>'
-        . '<input type="' . $tipo . '" name="' . $nombre . '" value="' . $e((string) $valor) . '"'
-        . ($tipo === 'password' ? ' minlength="12"' : '')
-        . ' style="width:100%;height:42px;padding:0 12px;border:1px solid ' . ($error ? '#e05252' : '#e6e4dd') . ';border-radius:8px;font:inherit">'
-        . ($error ? '<span style="font-size:12px;color:#b91c1c">' . $e($error) . '</span>' : '')
-        . '</label>';
+$v = static fn (string $k): string => (string) ($valores[$k] ?? '');
+$err = static function (string $k) use ($errores, $e): string {
+    return isset($errores[$k]) ? '<span class="campo__error">' . $e((string) $errores[$k]) . '</span>' : '';
 };
 
-$opciones = '';
-foreach (['comercio' => 'Comercio (compra)', 'mayorista' => 'Mayorista (vende)', 'repartidor' => 'Repartidor (transporta)'] as $valor => $texto) {
-    $sel = (($valores['rol'] ?? 'comercio') === $valor) ? ' selected' : '';
-    $opciones .= '<option value="' . $valor . '"' . $sel . '>' . $e($texto) . '</option>';
-}
+$ojo = static fn (string $id): string => '<button type="button" class="ojo" data-para="' . $id . '" aria-pressed="false" aria-label="Mostrar contraseña" title="Mostrar contraseña">'
+    . '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    . '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>';
 
-$contenido = '<h1>Crear cuenta</h1>'
-    . '<p>Te enviaremos un correo para confirmar la cuenta.</p>'
-    . '<form method="post" action="/registro" style="margin-top:20px">'
+$general = isset($errores['general'])
+    ? '<div class="aviso aviso--error" role="alert">' . $e((string) $errores['general']) . '</div>'
+    : '';
+
+$contenido = '<div class="auth-caja">'
+    . '<img class="auth-logo" src="/assets/img/ares-logo.svg" alt="Ares" width="68" height="68">'
+    . '<h1 class="auth-titulo">Crea tu cuenta</h1>'
+    . '<p class="auth-sub">Compra al mayoreo o vende tus productos en Ares.</p>'
+
+    . '<div class="auth-tabs" role="tablist">'
+    . '<a class="auth-tab" href="/login" role="tab" aria-selected="false">Entrar</a>'
+    . '<a class="auth-tab activo" href="/registro" role="tab" aria-selected="true">Crear cuenta</a>'
+    . '</div>'
+
+    . $general
+
+    . '<form method="post" action="/registro" class="auth-form" novalidate>'
     . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
-    . $campo('nombre_negocio', 'Nombre del negocio', 'text', $valores, $errores, $e)
-    . $campo('email', 'Correo', 'email', $valores, $errores, $e)
-    . $campo('telefono', 'Teléfono (10 dígitos)', 'tel', $valores, $errores, $e)
-    . $campo('password', 'Contraseña (mínimo 12)', 'password', $valores, $errores, $e)
-    . '<label style="display:block;margin-bottom:18px"><span style="font-size:13px;color:#4b5563">Tipo de cuenta</span>'
-    . '<select name="rol" style="width:100%;height:42px;padding:0 12px;border:1px solid #e6e4dd;border-radius:8px;font:inherit">' . $opciones . '</select></label>'
-    . '<button type="submit" style="width:100%;height:44px;background:#1f4d3a;color:#fff;border:0;border-radius:8px;font:inherit;font-weight:500;cursor:pointer">Crear cuenta</button>'
+
+    . '<label class="campo"><span class="campo__etiqueta">Nombre del negocio</span>'
+    . '<input class="campo__control" type="text" name="nombre_negocio" value="' . $e($v('nombre_negocio')) . '" required autocomplete="organization" placeholder="Abarrotes La Esquina">'
+    . $err('nombre_negocio') . '</label>'
+
+    . '<div class="auth-doble">'
+    . '<label class="campo"><span class="campo__etiqueta">Correo</span>'
+    . '<input class="campo__control" type="email" name="email" value="' . $e($v('email')) . '" required autocomplete="email" placeholder="tu@correo.com">'
+    . $err('email') . '</label>'
+
+    . '<label class="campo"><span class="campo__etiqueta">Teléfono</span>'
+    . '<input class="campo__control" type="tel" name="telefono" value="' . $e($v('telefono')) . '" required autocomplete="tel" inputmode="tel" placeholder="5512345678">'
+    . $err('telefono') . '</label>'
+    . '</div>'
+
+    . '<label class="campo"><span class="campo__etiqueta">Quiero</span>'
+    . '<select class="campo__control" name="rol" required>'
+    . '<option value="comercio"' . ($v('rol') === 'comercio' ? ' selected' : '') . '>Comprar al mayoreo</option>'
+    . '<option value="mayorista"' . ($v('rol') === 'mayorista' ? ' selected' : '') . '>Vender al mayoreo</option>'
+    . '<option value="repartidor"' . ($v('rol') === 'repartidor' ? ' selected' : '') . '>Repartir pedidos</option>'
+    . '</select></label>'
+
+    . '<label class="campo"><span class="campo__etiqueta">Contraseña</span>'
+    . '<span class="campo__con-boton">'
+    . '<input class="campo__control" id="clave1" type="password" name="password" required minlength="12" autocomplete="new-password" placeholder="Mínimo 12 caracteres" data-fuerza="medidor">'
+    . $ojo('clave1')
+    . '</span>'
+    . '<span class="fuerza" id="medidor" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'
+    . '<span class="campo__pista" id="fuerza-texto">Usa mayúsculas, números y un símbolo.</span>'
+    . $err('password') . '</label>'
+
+    . '<label class="campo"><span class="campo__etiqueta">Repite la contraseña</span>'
+    . '<span class="campo__con-boton">'
+    . '<input class="campo__control" id="clave2" type="password" name="password_confirmacion" required autocomplete="new-password" placeholder="Otra vez">'
+    . $ojo('clave2')
+    . '</span>'
+    . $err('password_confirmacion') . '</label>'
+
+    . '<button type="submit" class="boton boton--ancho">Crear cuenta</button>'
     . '</form>'
-    . '<p style="margin-top:18px;font-size:14px"><a href="/login" style="color:#1f4d3a">Ya tengo cuenta</a></p>';
+
+    . '<p class="auth-pie">¿Ya tienes cuenta? <a href="/login">Entrar</a></p>'
+    . '<p class="auth-legal">Al crear una cuenta aceptas el <a href="/privacidad">aviso de privacidad</a>.</p>'
+    . '</div>';
 
 require __DIR__ . '/../layout.php';

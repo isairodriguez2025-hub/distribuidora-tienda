@@ -25,6 +25,31 @@ final class UsuarioRepository
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Busca por teléfono comparando solo los últimos 10 dígitos, para que
+     * "+52 55 1234 5678", "5512345678" y "55-1234-5678" encuentren lo mismo.
+     */
+    public function buscarPorTelefono(string $telefono): ?array
+    {
+        $digitos = preg_replace('/\D+/', '', $telefono) ?? '';
+
+        if (strlen($digitos) < 10) {
+            return null;
+        }
+
+        $ultimos = substr($digitos, -10);
+
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM usuarios
+              WHERE deleted_at IS NULL
+                AND RIGHT(REGEXP_REPLACE(telefono, '[^0-9]', ''), 10) = ?
+              LIMIT 1"
+        );
+        $stmt->execute([$ultimos]);
+
+        return $stmt->fetch() ?: null;
+    }
+
     public function buscarPorId(int $id): ?array
     {
         $stmt = $this->pdo->prepare('SELECT * FROM usuarios WHERE id = ? AND deleted_at IS NULL LIMIT 1');

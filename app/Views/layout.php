@@ -37,7 +37,7 @@ if ($usuario !== null) {
     $enlaces[] = ['/buscar', 'Buscar'];
 
     if ($rol === 'comercio') {
-        $enlaces[] = ['/pedidos', 'Mis pedidos'];
+        $enlaces[] = ['/pedidos', 'Pedidos'];
         $enlaces[] = ['/favoritos', 'Favoritos'];
         $enlaces[] = ['/programados', 'Programados'];
     }
@@ -52,10 +52,10 @@ if ($usuario !== null) {
     if (in_array($rol, ['admin_total', 'admin_kyc', 'admin_soporte', 'admin_finanzas'], true)) {
         $enlaces[] = ['/admin', 'Admin'];
     }
-    $enlaces[] = ['/notificaciones', 'Avisos'];
-    $enlaces[] = ['/mensajes', 'Mensajes'];
     if ($rol === 'comercio') {
+        $enlaces[] = ['/pos/inventario', 'Inventario'];
         $enlaces[] = ['/pos', 'Caja'];
+        $enlaces[] = ['/pos/ventas', 'Ventas'];
     }
     if (in_array($rol, ['admin_total', 'admin_kyc'], true)) {
         $enlaces[] = ['/admin/kyc', 'Verificaciones'];
@@ -93,9 +93,13 @@ foreach ($enlaces as [$href, $texto]) {
 <head>
     <meta charset="utf-8">
     <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/assets/img/ares-logo.svg">
+    <link rel="apple-touch-icon" href="/assets/img/ares-192.png">
+    <meta name="theme-color" content="#0B0C0E">
     <link rel="icon" href="/icon-192.svg" type="image/svg+xml">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= $e($titulo) ?> · Didi2</title>
+    <title><?= $e($titulo) ?> · Ares</title>
     <?php if (!empty($mapa)): ?>
         <link rel="stylesheet" href="/assets/leaflet/leaflet.css">
     <?php endif; ?>
@@ -323,10 +327,11 @@ foreach ($enlaces as [$href, $texto]) {
     </style>
     <link rel="stylesheet" href="/assets/css/app.css">
 </head>
-<body class="<?= !empty($anchoCompleto) ? 'ancho-completo' : '' ?>">
+<body class="<?= !empty($anchoCompleto) ? 'ancho-completo' : '' ?><?= !empty($auth) ? ' auth' : '' ?>">
+<?php if (empty($auth)): ?>
 <header class="barra">
     <div class="barra__interior">
-        <a class="marca" href="<?= $usuario !== null ? '/buscar' : '/login' ?>">Didi2 <span>· B2B</span></a>
+        <a class="marca" href="<?= $usuario !== null ? '/buscar' : '/login' ?>"><img class="marca__logo" src="/assets/img/ares-logo.svg" alt="" width="30" height="30">Ares <span>· B2B</span></a>
 
         <?php if ($usuario !== null): ?>
             <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-principal">
@@ -376,7 +381,8 @@ foreach ($enlaces as [$href, $texto]) {
         <?php endif; ?>
     </div>
 </header>
-<main>
+<?php endif; ?>
+<main class="<?= !empty($auth) ? 'auth' : '' ?>">
     <?= $contenido ?>
 </main>
 <?php if (!empty($mapa)): ?>
@@ -405,6 +411,39 @@ $enCarrito = str_starts_with((string) ($_SERVER['REQUEST_URI'] ?? ''), '/carrito
 <?php endif; ?>
 <script nonce="<?= $nonce ?? '' ?>">
 if ("serviceWorker" in navigator) { window.addEventListener("load", function() { navigator.serviceWorker.register("/sw.js"); }); }
+
+// Mostrar u ocultar contraseña. El botón conserva el foco y anuncia el
+// cambio de estado a los lectores de pantalla.
+document.querySelectorAll('.ojo').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        var campo = document.getElementById(boton.dataset.para);
+        if (!campo) return;
+        var visible = campo.type === 'password';
+        campo.type = visible ? 'text' : 'password';
+        boton.classList.toggle('activo', visible);
+        boton.setAttribute('aria-pressed', visible ? 'true' : 'false');
+        boton.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        campo.focus();
+    });
+});
+
+// Medidor de fuerza: longitud, mayúscula, número y símbolo.
+var medidor = document.getElementById('medidor');
+if (medidor) {
+    var entrada = document.querySelector('[data-fuerza="medidor"]');
+    var texto = document.getElementById('fuerza-texto');
+    var etiquetas = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Excelente'];
+    entrada.addEventListener('input', function () {
+        var v = entrada.value, nivel = 0;
+        if (v.length >= 12) nivel++;
+        if (/[A-ZÁÉÍÓÚÑ]/.test(v)) nivel++;
+        if (/[0-9]/.test(v)) nivel++;
+        if (/[^A-Za-z0-9]/.test(v)) nivel++;
+        if (v.length === 0) nivel = 0;
+        medidor.dataset.nivel = String(nivel);
+        if (texto) texto.textContent = v.length === 0 ? 'Usa mayúsculas, números y un símbolo.' : etiquetas[nivel];
+    });
+}
 
 // Menú de cuenta y navegación móvil.
 (function () {

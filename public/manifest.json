@@ -1,21 +1,28 @@
 {
-  "name": "Didi2 B2B",
-  "short_name": "Didi2",
-  "description": "Plataforma B2B de distribución mayorista",
+  "name": "Ares · Distribución B2B",
+  "short_name": "Ares",
+  "description": "Materia prima, insumos y logística para negocios",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1a1a2e",
+  "background_color": "#0B0C0E",
+  "theme_color": "#0B0C0E",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/assets/img/ares-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/assets/img/ares-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/ares-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

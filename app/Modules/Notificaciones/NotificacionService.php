@@ -67,9 +67,16 @@ final class NotificacionService
         $stmt->execute([$usuarioId, $tipo]);
         $pref = $stmt->fetch();
 
+        // Los avisos de seguridad (recuperación de contraseña, verificación)
+        // no dependen de las preferencias: si el usuario los apagara, podría
+        // quedarse fuera de su propia cuenta.
+        if (in_array($tipo, ['recuperacion', 'verificacion', 'seguridad'], true)) {
+            return ['bandeja', 'correo', 'sms'];
+        }
+
         // Sin preferencia guardada se usan los canales por omisión.
         if ($pref === false) {
-            return ['bandeja', 'correo', 'push'];
+            return ['bandeja', 'correo', 'push', 'sms'];
         }
 
         $canales = ['bandeja'];

@@ -123,8 +123,9 @@ $router->get('/api/limitado', static fn (): Response => Response::json(['ok' => 
 $pdo = Database::conexion();
 $auditoria = new AuditLogger($pdo);
 $perfiles = new PerfilRepository($pdo);
+$notificaciones = new NotificacionService($pdo, __DIR__ . '/../../storage/correos');
 $auth = new AuthController(
-    new AuthService(new UsuarioRepository($pdo), $auditoria),
+    new AuthService(new UsuarioRepository($pdo), $auditoria, $notificaciones),
     __DIR__ . '/../Views',
     $perfiles,
 );
@@ -189,7 +190,6 @@ $router->post('/mayorista/productos/csv', [$catalogo, 'importarCsv'], [...$soloM
 $router->get('/mayorista/productos/{uuid:[0-9a-fA-F-]{36}}/escalas-preview', [$catalogo, 'escalasPreview'], $soloMayorista);
 
 // --- Carrito y pedidos -----------------------------------------------------
-$notificaciones = new NotificacionService($pdo, __DIR__ . '/../../storage/correos');
 $pedidoService = new PedidoService($pdo, $notificaciones);
 $carritoService = new CarritoService(new CarritoRepository($pdo), new \App\Modules\Catalogo\PrecioService());
 
@@ -290,6 +290,7 @@ $posSrv = new \App\Modules\Pos\PosService($posRepo, $auditoria, $notificaciones)
 $posCtl = new \App\Modules\Pos\PosController($posSrv, $posRepo, __DIR__ . '/../Views');
 
 $router->get('/pos', [$posCtl, 'caja'], $soloComercio);
+$router->get('/pos/inventario', [$posCtl, 'productos'], $soloComercio);
 $router->post('/pos/turno/abrir', [$posCtl, 'abrirTurno'], [...$soloComercio, new CsrfProtect()]);
 $router->post('/pos/turno/cerrar', [$posCtl, 'cerrarTurno'], [...$soloComercio, new CsrfProtect()]);
 $router->get('/pos/corte', [$posCtl, 'corte'], $soloComercio);
