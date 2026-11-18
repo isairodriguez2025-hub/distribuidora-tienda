@@ -74,6 +74,16 @@ final class NotificacionService
             return ['bandeja', 'correo', 'sms'];
         }
 
+        // Interruptor maestro: apagado no sale ningún aviso, ni siquiera a la
+        // bandeja del sitio.
+        $maestro = $this->pdo->prepare('SELECT notificaciones FROM preferencias_usuario WHERE usuario_id = ? LIMIT 1');
+        $maestro->execute([$usuarioId]);
+        $activo = $maestro->fetchColumn();
+
+        if ($activo !== false && (int) $activo === 0) {
+            return [];
+        }
+
         // Sin preferencia guardada se usan los canales por omisión.
         if ($pref === false) {
             return ['bandeja', 'correo', 'push', 'sms'];
@@ -225,5 +235,15 @@ final class NotificacionService
         $this->pdo->prepare(
             "UPDATE notificaciones SET estado = 'leido' WHERE usuario_id = ? AND canal = 'bandeja' AND estado <> 'leido'"
         )->execute([$usuarioId]);
+    }
+
+    /** Estado del interruptor maestro, para pintarlo en la configuración. */
+    public function notificacionesActivas(int $usuarioId): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT notificaciones FROM preferencias_usuario WHERE usuario_id = ? LIMIT 1');
+        $stmt->execute([$usuarioId]);
+        $valor = $stmt->fetchColumn();
+
+        return $valor === false || (int) $valor === 1;
     }
 }

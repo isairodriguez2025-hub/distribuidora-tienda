@@ -359,6 +359,7 @@ final class PerfilController
     public function guardarPrivacidad(Request $peticion): Response
     {
         $this->repo->guardarPreferencias($this->usuarioId(), [
+            'notificaciones' => $peticion->input('notificaciones') !== null,
             'sms'       => $peticion->input('sms') !== null,
             'correo'    => $peticion->input('correo') !== null,
             'ubicacion' => $peticion->input('ubicacion') !== null,
@@ -411,6 +412,21 @@ final class PerfilController
     public function ayuda(Request $peticion): Response
     {
         return $this->vista('perfil/ayuda', ['titulo' => 'Ayuda']);
+    }
+
+
+    /** POST /perfil/notificaciones — interruptor maestro, desde dos pantallas. */
+    public function notificaciones(Request $peticion): Response
+    {
+        $activo = (string) $peticion->input('notificaciones', '') === '1';
+        $this->repo->guardarNotificaciones($this->usuarioId(), $activo);
+
+        $volver = (string) $peticion->input('volver', '/perfil/privacidad');
+        if (!str_starts_with($volver, '/') || str_starts_with($volver, '//')) {
+            $volver = '/perfil/privacidad';
+        }
+
+        return Response::redirect($volver . (str_contains($volver, '?') ? '&' : '?') . 'ok=1');
     }
 
     // -------------------------------------------------------- calificaciones

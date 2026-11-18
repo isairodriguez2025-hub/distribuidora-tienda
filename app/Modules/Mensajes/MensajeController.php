@@ -77,6 +77,7 @@ final class MensajeController
                 }
             )),
             'eliminados' => (int) $peticion->query('eliminados', 0),
+            'notificacionesActivas' => $this->avisos->notificacionesActivas($usuarioId),
         ]);
 
         // Se marcan leídas después de pintar, para que el aviso nuevo todavía

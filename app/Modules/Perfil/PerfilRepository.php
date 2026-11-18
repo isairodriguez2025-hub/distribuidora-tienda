@@ -243,28 +243,45 @@ final class PerfilRepository
 
     public function preferencias(int $usuarioId): array
     {
-        $stmt = $this->pdo->prepare('SELECT sms, correo, ubicacion FROM preferencias_usuario WHERE usuario_id = ?');
+        $stmt = $this->pdo->prepare('SELECT notificaciones, sms, correo, ubicacion FROM preferencias_usuario WHERE usuario_id = ?');
         $stmt->execute([$usuarioId]);
         $fila = $stmt->fetch();
 
         if ($fila === false) {
-            return ['sms' => 1, 'correo' => 1, 'ubicacion' => 1];
+            return ['notificaciones' => 1, 'sms' => 1, 'correo' => 1, 'ubicacion' => 1];
         }
 
-        return ['sms' => (int) $fila['sms'], 'correo' => (int) $fila['correo'], 'ubicacion' => (int) $fila['ubicacion']];
+        return [
+            'notificaciones' => (int) $fila['notificaciones'],
+            'sms'            => (int) $fila['sms'],
+            'correo'         => (int) $fila['correo'],
+            'ubicacion'      => (int) $fila['ubicacion'],
+        ];
     }
 
     public function guardarPreferencias(int $usuarioId, array $p): void
     {
         $this->pdo->prepare(
-            'INSERT INTO preferencias_usuario (usuario_id, sms, correo, ubicacion) VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE sms = VALUES(sms), correo = VALUES(correo), ubicacion = VALUES(ubicacion)'
+            'INSERT INTO preferencias_usuario (usuario_id, notificaciones, sms, correo, ubicacion) VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE notificaciones = VALUES(notificaciones), sms = VALUES(sms),
+                                     correo = VALUES(correo), ubicacion = VALUES(ubicacion)'
         )->execute([
             $usuarioId,
+            !empty($p['notificaciones']) ? 1 : 0,
             (int) !empty($p['sms']),
             (int) !empty($p['correo']),
             (int) !empty($p['ubicacion']),
         ]);
+    }
+
+
+    /** Solo el interruptor maestro: lo usa la configuración del centro de mensajes. */
+    public function guardarNotificaciones(int $usuarioId, bool $activo): void
+    {
+        $this->pdo->prepare(
+            'INSERT INTO preferencias_usuario (usuario_id, notificaciones) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE notificaciones = VALUES(notificaciones)'
+        )->execute([$usuarioId, $activo ? 1 : 0]);
     }
 
     /**

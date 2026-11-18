@@ -12,11 +12,13 @@
  * @var int      $yo
  * @var array    $avisos
  * @var int      $eliminados
+ * @var bool     $notificacionesActivas
  */
 $error = $error ?? null;
 $tab = $tab ?? 'conversaciones';
 $avisos = $avisos ?? [];
 $eliminados = (int) ($eliminados ?? 0);
+$notificacionesActivas = (bool) ($notificacionesActivas ?? true);
 
 $sinLeerAvisos = 0;
 foreach ($avisos as $a) {
@@ -56,7 +58,7 @@ foreach ($hilos as $h) {
 
 if ($lista === '') {
     $lista = '<div class="msg-vacio"><p class="silencio">Todavía no tienes conversaciones.</p>'
-        . '<button type="button" class="boton boton--claro" data-abrir="msg-config">Empezar una</button></div>';
+        . '<button type="button" class="boton boton--claro" data-abrir="msg-nueva">Empezar una</button></div>';
 }
 
 // ------------------------------------------------------------------- chat
@@ -160,6 +162,10 @@ if ($tab === 'notificaciones') {
         . '<div class="msg-lista__head">'
         . '<strong>Conversaciones</strong>'
         . '<div class="msg-lista__acciones">'
+        . '<button type="button" class="boton-icono" data-abrir="msg-nueva" title="Nueva conversación" aria-label="Nueva conversación">'
+        . '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        . '<path d="M12 5v14M5 12h14"></path></svg>'
+        . '</button>'
         . '<button type="button" class="boton-icono" data-abrir="msg-config" title="Configuración" aria-label="Configuración">'
         . '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
         . '<circle cx="12" cy="12" r="3.2"></circle>'
@@ -181,14 +187,30 @@ if ($tab === 'notificaciones') {
 }
 
 // --------------------------------------------------------------- diálogos
-$contenido .= '<dialog class="dialogo" id="msg-config" aria-labelledby="msg-config-titulo">'
-    . '<h2 id="msg-config-titulo">Configuración de mensajes</h2>'
-    . '<p>Empieza una conversación nueva o ajusta cómo quieres recibir avisos.</p>'
+$contenido .= '<dialog class="dialogo" id="msg-nueva" aria-labelledby="msg-nueva-titulo">'
+    . '<h2 id="msg-nueva-titulo">Nueva conversación</h2>'
+    . '<p>Elige con quién quieres hablar. El chat queda dentro de Ares.</p>'
     . $formNueva
-    . '<div class="dialogo__acciones" style="justify-content:space-between;margin-top:16px">'
-    . '<a class="boton boton--claro" href="/perfil/privacidad">Avisos y privacidad</a>'
-    . '<button type="button" class="boton boton--claro" data-cerrar>Cerrar</button>'
+    . '<div class="dialogo__acciones" style="margin-top:14px">'
+    . '<button type="button" class="boton boton--claro" data-cerrar>Cancelar</button>'
     . '</div></dialog>'
+
+    . '<dialog class="dialogo" id="msg-config" aria-labelledby="msg-config-titulo">'
+    . '<h2 id="msg-config-titulo">Configuración</h2>'
+    . '<form method="post" action="/perfil/notificaciones">'
+    . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
+    . '<input type="hidden" name="volver" value="/mensajes">'
+    . '<label class="opcion">'
+    . '<span class="opcion__texto"><strong>Habilitar notificaciones</strong>'
+    . '<small>Avisos de pedidos, pagos y cuenta. Si lo apagas, no llega ninguno salvo los de seguridad.</small></span>'
+    . '<span class="switch">'
+    . '<input type="checkbox" name="notificaciones" value="1"' . ($notificacionesActivas ? ' checked' : '') . '>'
+    . '<span class="switch__pista" aria-hidden="true"></span>'
+    . '</span></label>'
+    . '<div class="dialogo__acciones" style="margin-top:16px">'
+    . '<button type="button" class="boton boton--claro" data-cerrar>Cancelar</button>'
+    . '<button type="submit" class="boton">Guardar</button>'
+    . '</div></form></dialog>'
 
     . '<dialog class="dialogo" id="confirmar-borrado" aria-labelledby="borrado-titulo">'
     . '<h2 id="borrado-titulo">Eliminar conversaciones</h2>'

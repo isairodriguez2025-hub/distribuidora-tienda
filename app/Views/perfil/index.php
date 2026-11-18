@@ -52,6 +52,10 @@ if (isset($_GET['ok']) && $_GET['ok'] === 'datos') {
 }
 
 $contenido = '<div class="cuenta">'
+    . '<header class="pagina-cabecera">'
+    . '<h1>Mi perfil</h1>'
+    . '<p>Tus datos, la seguridad de la cuenta y las opciones de privacidad.</p>'
+    . '</header>'
     . $aviso
 
     // ---------------------------------------------------------- ficha

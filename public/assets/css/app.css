@@ -1577,3 +1577,10 @@ html[data-tema="oscuro"] .aviso-item p { color: #B9C0CA; }
 html[data-tema="oscuro"] .aviso-item__enlace { color: #8FD4B0; }
 html[data-tema="oscuro"] .msg-modo-borrar .msg-hilo:hover { background: #2A1517; }
 html[data-tema="oscuro"] .msg-fila:has(.msg-sel:checked) .msg-hilo { background: #2A1517; box-shadow: inset 0 0 0 1px #4A2226; }
+
+/* Encabezado de sección reutilizable (Mi perfil, Centro de mensajes). */
+.pagina-cabecera { margin-bottom: 18px; }
+.pagina-cabecera h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+.pagina-cabecera p { margin: 4px 0 0; font-size: 13.5px; color: #6b7280; }
+html[data-tema="oscuro"] .pagina-cabecera p { color: var(--gris); }
+@media (max-width: 620px) { .pagina-cabecera h1 { font-size: 23px; } }

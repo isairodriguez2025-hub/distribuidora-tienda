@@ -28,6 +28,7 @@ $contenido = '<div class="ajustes">'
     . '<form method="post" action="/perfil/privacidad" class="carta ajustes__grupo">'
     . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
 
+    . $interruptor('notificaciones', 'Habilitar notificaciones', 'Interruptor general. Si lo apagas, no llega ningún aviso salvo los de seguridad.', $pref('notificaciones'))
     . $interruptor('sms', 'Mensajes de texto', 'Avisos de pedidos y códigos de seguridad por SMS.', $pref('sms'))
     . $interruptor('correo', 'Correo electrónico', 'Resúmenes, facturas y novedades de tu cuenta.', $pref('correo'))
     . $interruptor('ubicacion', 'Compartir mi ubicación', 'Solo mientras tengas un pedido en camino, para que el repartidor te encuentre.', $pref('ubicacion'))
