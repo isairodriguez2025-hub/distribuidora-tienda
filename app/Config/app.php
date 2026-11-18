@@ -175,6 +175,10 @@ $router->post('/perfil/editar', [$perfil, 'editar'], [$seguridad, new AuthRequir
 $router->get('/perfil/privacidad', [$perfil, 'privacidad'], [$seguridad, new AuthRequired()]);
 $router->post('/perfil/privacidad', [$perfil, 'guardarPrivacidad'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/perfil/eliminar', [$perfil, 'eliminar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->get('/perfil/ajustes', [$perfil, 'ajustes'], [$seguridad, new AuthRequired()]);
+$router->post('/perfil/tema', [$perfil, 'guardarTema'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->get('/ayuda', [$perfil, 'ayuda'], [$seguridad, new AuthRequired()]);
+$router->post('/calificar', [$perfil, 'calificar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/kyc', [$perfil, 'kycForm'], [$seguridad, new AuthRequired()]);
 $router->post('/kyc', [$perfil, 'subirKyc'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 

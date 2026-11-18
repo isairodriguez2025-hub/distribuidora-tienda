@@ -1142,3 +1142,249 @@ a, button, .boton, .carrito-boton, [role="button"] {
 .fab-carrito:focus { outline: none; }
 .fab-carrito:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .fab-carrito::selection, .fab-carrito *::selection { background: transparent; }
+
+/* ------------------------------------------------------ nombre y nota */
+.ficha__linea { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ficha__nota {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 2px 9px 2px 7px;
+    border-radius: 999px;
+    background: #fdf7e6;
+    border: 1px solid #f0e2bc;
+    line-height: 1.5;
+}
+.ficha__estrella { color: #d9a127; font-size: 14px; }
+.ficha__puntos { font-size: 13px; font-weight: 700; color: #7a5a10; font-variant-numeric: tabular-nums; }
+.visualmente-oculto {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ------------------------------------------------------------- atajos */
+.atajos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.atajo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 8px;
+    background: #fff;
+    border: 1px solid #e6e4dd;
+    border-radius: 16px;
+    color: #14161a;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.atajo svg { color: #1f4d3a; }
+.atajo:hover { border-color: #cfd6cf; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(20, 22, 20, .07); }
+.atajo:active { transform: translateY(0); }
+
+/* ------------------------------------------------------------- sesión */
+.cuenta__sesion { display: grid; gap: 10px; }
+.boton--fila {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 48px;
+    font-size: 15px;
+    font-weight: 600;
+}
+.boton--fila svg { flex: 0 0 auto; }
+.cuenta__form { margin: 0; }
+
+/* ---------------------------------------------------------------- faq */
+.faq {
+    border-bottom: 1px solid #f0efea;
+    padding: 14px 0;
+}
+.faq:last-of-type { border-bottom: 0; }
+.faq summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14.5px;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: #8b929c; font-weight: 400; font-size: 18px; }
+.faq[open] summary::after { content: "–"; }
+.faq p { margin: 10px 0 0; font-size: 14px; color: #4b5563; line-height: 1.6; }
+
+/* ======================================================== modo oscuro */
+html[data-tema="oscuro"] {
+    --tinta: #E7EAEE;
+    --gris: #9BA3AE;
+    --gris-claro: #6E7681;
+    --linea: #2A2F37;
+    --fondo: #0E1013;
+    --marca: #55A981;
+    --marca-suave: #16211C;
+    --alerta: #D9A24A;
+    --error: #F07373;
+    color-scheme: dark;
+}
+html[data-tema="oscuro"] body { background: var(--fondo); color: var(--tinta); }
+html[data-tema="oscuro"] header.barra { background: #12151A; border-bottom-color: #2A2F37; }
+html[data-tema="oscuro"] .marca { color: var(--tinta); }
+html[data-tema="oscuro"] nav a { color: #A7AEB8; }
+html[data-tema="oscuro"] nav a:hover, html[data-tema="oscuro"] nav a.activo { color: #fff; }
+
+html[data-tema="oscuro"] .carta,
+html[data-tema="oscuro"] .ficha,
+html[data-tema="oscuro"] .cuenta__mas,
+html[data-tema="oscuro"] .atajo,
+html[data-tema="oscuro"] .dialogo,
+html[data-tema="oscuro"] table,
+html[data-tema="oscuro"] .tarjeta,
+html[data-tema="oscuro"] .panel,
+html[data-tema="oscuro"] .auth-caja {
+    background: #15181D;
+    border-color: #2A2F37;
+    color: var(--tinta);
+}
+html[data-tema="oscuro"] .ficha__correo,
+html[data-tema="oscuro"] .pista,
+html[data-tema="oscuro"] .silencio { color: var(--gris); }
+html[data-tema="oscuro"] .chip--rol { background: var(--marca-suave); border-color: #24402F; color: #7FC9A2; }
+
+html[data-tema="oscuro"] .campo__control {
+    background: #0F1216;
+    border-color: #2A2F37;
+    color: #E7EAEE;
+}
+html[data-tema="oscuro"] .campo__control:focus { background: #12161B; border-color: var(--marca); }
+html[data-tema="oscuro"] .campo__etiqueta { color: #A7AEB8; }
+html[data-tema="oscuro"] .campo__pista { color: var(--gris-claro); }
+
+html[data-tema="oscuro"] th { background: #1A1E24; color: #B9C0CA; border-color: #2A2F37; }
+html[data-tema="oscuro"] td { border-color: #23272E; }
+html[data-tema="oscuro"] tr:hover td { background: #1A1E24; }
+
+html[data-tema="oscuro"] .boton--claro,
+html[data-tema="oscuro"] .boton--accion,
+html[data-tema="oscuro"] .boton--archivo,
+html[data-tema="oscuro"] .atajo { background: #171B21; color: var(--tinta); border-color: #2A2F37; }
+html[data-tema="oscuro"] .boton--claro:hover,
+html[data-tema="oscuro"] .boton--accion:hover { background: #1D2229; border-color: #3A4048; }
+html[data-tema="oscuro"] .fila-opcion { color: var(--tinta); border-color: #23272E; }
+html[data-tema="oscuro"] .fila-opcion:hover { background: #1B1F25; }
+html[data-tema="oscuro"] .cuenta__mas-titulo { color: var(--gris-claro); }
+html[data-tema="oscuro"] .switch__pista { background: #3A4048; }
+html[data-tema="oscuro"] .switch__pista::after { background: #E7EAEE; }
+html[data-tema="oscuro"] .switch input:checked + .switch__pista { background: var(--marca); }
+
+html[data-tema="oscuro"] .aviso--ok { background: #16211C; border-color: #24402F; color: #9BD8B6; }
+html[data-tema="oscuro"] .aviso--error { background: #2A1517; border-color: #4A2226; color: #F0A0A0; }
+html[data-tema="oscuro"] .ficha__nota { background: #2A2313; border-color: #453A1E; }
+html[data-tema="oscuro"] .ficha__puntos { color: #F0C46A; }
+html[data-tema="oscuro"] .ficha__iniciales,
+html[data-tema="oscuro"] .editor__iniciales { background: linear-gradient(135deg, #1F4D3A, #3C7C5E); }
+html[data-tema="oscuro"] .faq { border-color: #23272E; }
+html[data-tema="oscuro"] .faq p, html[data-tema="oscuro"] .legal p { color: #B9C0CA; }
+html[data-tema="oscuro"] .legal h2, html[data-tema="oscuro"] h1 { color: var(--tinta); }
+html[data-tema="oscuro"] a { color: #8FD4B0; }
+html[data-tema="oscuro"] .volver { color: #8FD4B0; }
+html[data-tema="oscuro"] .fab-carrito { background: #1F4D3A; }
+html[data-tema="oscuro"] .dialogo::backdrop { background: rgba(0, 0, 0, .7); }
+
+/* ------------------------------------------------------- calificar */
+.calificar { margin-top: 18px; }
+.estrellas {
+    direction: rtl;
+    display: inline-flex;
+    gap: 2px;
+    margin: 4px 0 14px;
+}
+.estrella__radio { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.estrella__icono {
+    font-size: 34px;
+    line-height: 1;
+    color: #d8dbe0;
+    cursor: pointer;
+    transition: color .12s, transform .12s;
+    padding: 0 2px;
+}
+.estrella__icono:hover,
+.estrella__icono:hover ~ .estrella__icono,
+.estrella__radio:checked ~ .estrella__icono { color: #e0a92c; }
+.estrella__icono:active { transform: scale(.92); }
+.estrella__radio:focus-visible + .estrella__icono { outline: 2px solid #1f4d3a; outline-offset: 2px; border-radius: 4px; }
+html[data-tema="oscuro"] .estrella__icono { color: #3A4048; }
+html[data-tema="oscuro"] .estrella__icono:hover,
+html[data-tema="oscuro"] .estrella__icono:hover ~ .estrella__icono,
+html[data-tema="oscuro"] .estrella__radio:checked ~ .estrella__icono { color: #F0C46A; }
+
+/* Contraste en oscuro: los enlaces heredaban el verde claro y dejaban el texto
+   de los botones casi invisible sobre el fondo verde. */
+html[data-tema="oscuro"] a.boton,
+html[data-tema="oscuro"] .boton,
+html[data-tema="oscuro"] .boton--peligro { color: #fff; }
+html[data-tema="oscuro"] .boton--claro,
+html[data-tema="oscuro"] .boton--texto { color: var(--tinta); }
+html[data-tema="oscuro"] .atajo svg,
+html[data-tema="oscuro"] .boton--accion svg { color: #7FC9A2; }
+html[data-tema="oscuro"] .ficha__editar { color: #fff; }
+html[data-tema="oscuro"] .calificar .boton { color: #fff; }
+html[data-tema="oscuro"] .boton:not(.boton--claro):not(.boton--peligro):not(.boton--texto) {
+    background: #2E7D5B;
+    border-color: #2E7D5B;
+    color: #fff;
+}
+html[data-tema="oscuro"] .boton:not(.boton--claro):not(.boton--peligro):not(.boton--texto):hover {
+    background: #37946C;
+    border-color: #37946C;
+}
+
+/* La caja usa su propia paleta (--d-*): se reasigna en oscuro para que el
+   catálogo, el ticket y los campos no queden en blanco. */
+html[data-tema="oscuro"] {
+    --d-verde: #55A981;
+    --d-verde-2: #6FC49A;
+    --d-verde-suave: #16211C;
+    --d-tinta: #E7EAEE;
+    --d-gris: #9BA3AE;
+    --d-gris-claro: #6E7681;
+    --d-linea: #2A2F37;
+    --d-fondo: #0E1013;
+    --d-blanco: #15181D;
+    --d-ok: #7FC9A2;
+    --d-error: #F07373;
+}
+html[data-tema="oscuro"] .prod,
+html[data-tema="oscuro"] .pos__ticket,
+html[data-tema="oscuro"] .pos__vacio,
+html[data-tema="oscuro"] .pos-modal__caja,
+html[data-tema="oscuro"] .pos__lineas { background: #15181D; border-color: #2A2F37; }
+html[data-tema="oscuro"] .prod__precio { color: #7FC9A2; }
+html[data-tema="oscuro"] .prod__stock { color: #9BA3AE; }
+html[data-tema="oscuro"] .pos__cobrar { background: #2E7D5B; color: #fff; }
+html[data-tema="oscuro"] .pos__cobrar:disabled { background: #2A2F37; color: #6E7681; }
+html[data-tema="oscuro"] .pos input,
+html[data-tema="oscuro"] .pos select,
+html[data-tema="oscuro"] .pos textarea { background: #0F1216; border-color: #2A2F37; color: #E7EAEE; }
+html[data-tema="oscuro"] .pos__cambio { background: #16211C; color: #7FC9A2; }
+html[data-tema="oscuro"] .pos__total { color: #E7EAEE; }
+html[data-tema="oscuro"] .nav-toggle {
+    background: #171B21;
+    border-color: #2A2F37;
+    color: #E7EAEE;
+}
+html[data-tema="oscuro"] .cuenta__boton { background: #171B21; border-color: #2A2F37; color: #E7EAEE; }
+html[data-tema="oscuro"] .cuenta__menu { background: #15181D; border-color: #2A2F37; }
+html[data-tema="oscuro"] .cuenta__menu a { color: #E7EAEE; }
+html[data-tema="oscuro"] .cuenta__menu a:hover { background: #1B1F25; }

@@ -14,6 +14,7 @@ $rol = is_array($roles) && $roles !== [] ? (string) $roles[0] : null;
 // Nombre y foto para el menú de cuenta (una sola consulta por página).
 $nombreCuenta = '';
 $avatarUrl = null;
+$tema = 'claro';
 if ($usuario !== null) {
     try {
         $stmtCuenta = \App\Config\Database::conexion()->prepare(
@@ -27,6 +28,12 @@ if ($usuario !== null) {
         $filaCuenta = $stmtCuenta->fetch() ?: [];
         $nombreCuenta = (string) ($filaCuenta['nombre_negocio'] ?? $filaCuenta['nombre_comercial'] ?? $filaCuenta['email'] ?? '');
         $avatarUrl = \App\Modules\Perfil\AvatarService::url((int) $usuario);
+
+        $stmtTema = \App\Config\Database::conexion()->prepare(
+            'SELECT tema FROM preferencias_usuario WHERE usuario_id = ? LIMIT 1'
+        );
+        $stmtTema->execute([$usuario]);
+        $tema = $stmtTema->fetchColumn() === 'oscuro' ? 'oscuro' : 'claro';
     } catch (\Throwable) {
         $nombreCuenta = '';
     }
@@ -89,7 +96,7 @@ foreach ($enlaces as [$href, $texto]) {
 }
 ?>
 <!doctype html>
-<html lang="es">
+<html lang="es" data-tema="<?= $tema ?>">
 <head>
     <meta charset="utf-8">
     <link rel="manifest" href="/manifest.json">
@@ -442,6 +449,17 @@ if (medidor) {
         if (v.length === 0) nivel = 0;
         medidor.dataset.nivel = String(nivel);
         if (texto) texto.textContent = v.length === 0 ? 'Usa mayúsculas, números y un símbolo.' : etiquetas[nivel];
+    });
+}
+
+// Cambio de tema: se aplica al instante y se guarda en la cuenta. Si el
+// navegador no ejecuta JS, el botón Guardar del <noscript> hace lo mismo.
+var formTema = document.getElementById('form-tema');
+if (formTema) {
+    var casillaTema = formTema.querySelector('input[name="tema"]');
+    casillaTema.addEventListener('change', function () {
+        document.documentElement.dataset.tema = casillaTema.checked ? 'oscuro' : 'claro';
+        formTema.submit();
     });
 }
 

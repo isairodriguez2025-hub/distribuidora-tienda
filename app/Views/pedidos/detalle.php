@@ -11,6 +11,7 @@
 /** @var bool $chatAbierto */
 /** @var string|null $mensaje */
 /** @var string|null $error */
+/** @var array{evaluado:int, nombre:string, mio:?int, puede:bool} $calificacion */
 
 $ETIQUETA = [
     'borrador' => 'Borrador', 'pendiente_pago' => 'Esperando pago', 'pago_autorizado' => 'Pago autorizado',
@@ -143,6 +144,34 @@ if ($chatAbierto) {
         . '</form></div>';
 }
 
+
+$bloqueCalificar = '';
+if (!empty($calificacion['puede']) && (int) $calificacion['evaluado'] > 0) {
+    $mio = $calificacion['mio'];
+    $estrellas = '';
+    for ($n = 5; $n >= 1; $n--) {
+        $estrellas .= '<input class="estrella__radio" type="radio" id="cal-' . $n . '" name="puntaje" value="' . $n . '"'
+            . ($mio === $n ? ' checked' : '') . ' required>'
+            . '<label class="estrella__icono" for="cal-' . $n . '" aria-label="' . $n . ' de 5">★</label>';
+    }
+
+    $bloqueCalificar = '<section class="carta calificar">'
+        . '<h2 style="margin-top:0">' . ($mio !== null ? 'Tu calificación para ' : 'Califica a ') . $e((string) $calificacion['nombre']) . '</h2>'
+        . '<p class="pista">' . ($mio !== null
+            ? 'Ya lo puntuaste con ' . $mio . ' de 5. Puedes cambiarlo cuando quieras.'
+            : 'Solo lo ves tú y la otra persona ve su promedio. Sirve para que los buenos proveedores destaquen.') . '</p>'
+        . '<form method="post" action="/calificar">'
+        . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
+        . '<input type="hidden" name="evaluado_id" value="' . (int) $calificacion['evaluado'] . '">'
+        . '<input type="hidden" name="pedido_id" value="' . (int) $pedido['id'] . '">'
+        . '<input type="hidden" name="volver" value="/pedidos/' . $e((string) $pedido['uuid']) . '">'
+        . '<div class="estrellas">' . $estrellas . '</div>'
+        . '<label class="campo"><span class="campo__etiqueta">Comentario (opcional)</span>'
+        . '<input class="campo__control" name="comentario" maxlength="280" placeholder="Llegó a tiempo y completo"></label>'
+        . '<button type="submit" class="boton">' . ($mio !== null ? 'Actualizar calificación' : 'Enviar calificación') . '</button>'
+        . '</form></section>';
+}
+
 $contenido = '<h1>Pedido ' . $e(substr((string) $pedido['uuid'], 0, 8)) . '</h1>'
     . '<p>' . $e($pedido['mayorista']) . ' → ' . $e($pedido['comercio']) . '</p>'
     . ($mensaje !== null ? '<div class="aviso aviso--ok">' . $e($mensaje) . '</div>' : '')
@@ -161,6 +190,7 @@ $contenido = '<h1>Pedido ' . $e(substr((string) $pedido['uuid'], 0, 8)) . '</h1>
     . '<span>IVA $' . number_format((float) $pedido['iva'], 2) . '</span>'
     . '<strong style="color:#1a1a1a">Total $' . number_format((float) $pedido['total'], 2) . '</strong></div>'
     . '<h2>Historial</h2><ul style="padding-left:18px;margin:0">' . $linea . '</ul>'
-    . $bloqueChat;
+    . $bloqueChat
+    . $bloqueCalificar;
 
 require __DIR__ . '/../layout.php';

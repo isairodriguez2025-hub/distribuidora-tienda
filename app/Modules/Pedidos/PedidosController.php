@@ -232,6 +232,7 @@ final class PedidosController
             'esRepartidor' => $esRepartidor,
             'mensaje'     => $peticion->query('ok') !== null ? 'Pedido actualizado.' : null,
             'error'       => $peticion->query('error'),
+            'calificacion' => $this->datosCalificacion($pedido, $esComercio, $esMayorista),
         ]);
     }
 
@@ -329,5 +330,58 @@ final class PedidosController
             'pedido' => $pedido,
             'lineas' => $this->detallePedido((int) $pedido['id']),
         ]);
+    }
+
+    /**
+     * Datos para el bloque de calificación del detalle: a quién se puntúa y
+     * qué puntaje puso ya este usuario, si lo hizo.
+     *
+     * @return array{evaluado: int, nombre: string, mio: ?int, puede: bool}
+     */
+    private function datosCalificacion(array $pedido, bool $esComercio, bool $esMayorista): array
+    {
+        $vacio = ['evaluado' => 0, 'nombre' => '', 'mio' => null, 'puede' => false];
+
+        if (!$esComercio && !$esMayorista) {
+            return $vacio;
+        }
+
+        // En pedidos, comercio_id y mayorista_id apuntan al perfil del rol,
+        // no al usuario: hay que traducirlos para calificar a la persona.
+        $tablaPerfil = $esComercio ? 'mayoristas_perfil' : 'comercios_perfil';
+        $perfilId = $esComercio ? (int) $pedido['mayorista_id'] : (int) $pedido['comercio_id'];
+
+        if ($perfilId <= 0) {
+            return $vacio;
+        }
+
+        $stmt = $this->pdo->prepare("SELECT usuario_id FROM {$tablaPerfil} WHERE id = ? LIMIT 1");
+        $stmt->execute([$perfilId]);
+        $evaluado = (int) ($stmt->fetchColumn() ?: 0);
+
+        if ($evaluado <= 0) {
+            return $vacio;
+        }
+
+        $stmt = $this->pdo->prepare(
+            'SELECT COALESCE(m.nombre_comercial, c.nombre_negocio, u.nombre, u.email) AS nombre
+               FROM usuarios u
+               LEFT JOIN mayoristas_perfil m ON m.usuario_id = u.id
+               LEFT JOIN comercios_perfil c ON c.usuario_id = u.id
+              WHERE u.id = ? LIMIT 1'
+        );
+        $stmt->execute([$evaluado]);
+        $nombre = (string) ($stmt->fetchColumn() ?: 'la otra parte');
+
+        $stmt = $this->pdo->prepare('SELECT puntaje FROM calificaciones WHERE evaluador_id = ? AND evaluado_id = ? LIMIT 1');
+        $stmt->execute([$this->usuarioId(), $evaluado]);
+        $mio = $stmt->fetchColumn();
+
+        return [
+            'evaluado' => $evaluado,
+            'nombre'   => $nombre,
+            'mio'      => $mio === false ? null : (int) $mio,
+            'puede'    => in_array((string) $pedido['estado'], ['recibido', 'entregado', 'completado'], true),
+        ];
     }
 }

@@ -289,4 +289,75 @@ final class PerfilRepository
             throw $e;
         }
     }
+
+    // ------------------------------------------------------- calificaciones
+
+    /** @return array{promedio: ?float, total: int} */
+    public function calificacion(int $usuarioId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT AVG(puntaje) AS promedio, COUNT(*) AS total FROM calificaciones WHERE evaluado_id = ?'
+        );
+        $stmt->execute([$usuarioId]);
+        $fila = $stmt->fetch() ?: [];
+
+        $total = (int) ($fila['total'] ?? 0);
+
+        return [
+            'promedio' => $total > 0 ? round((float) $fila['promedio'], 1) : null,
+            'total'    => $total,
+        ];
+    }
+
+    /** Roles que participan del mercado y por tanto pueden puntuar. */
+    public function rolDe(int $usuarioId): ?string
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT r.nombre FROM usuario_roles ur JOIN roles r ON r.id = ur.rol_id
+              WHERE ur.usuario_id = ? ORDER BY r.id LIMIT 1'
+        );
+        $stmt->execute([$usuarioId]);
+        $rol = $stmt->fetchColumn();
+
+        return $rol === false ? null : (string) $rol;
+    }
+
+    public function miCalificacion(int $evaluadorId, int $evaluadoId): ?int
+    {
+        $stmt = $this->pdo->prepare('SELECT puntaje FROM calificaciones WHERE evaluador_id = ? AND evaluado_id = ? LIMIT 1');
+        $stmt->execute([$evaluadorId, $evaluadoId]);
+        $p = $stmt->fetchColumn();
+
+        return $p === false ? null : (int) $p;
+    }
+
+    public function calificar(int $evaluadorId, int $evaluadoId, int $puntaje, ?int $pedidoId, string $comentario): void
+    {
+        $this->pdo->prepare(
+            'INSERT INTO calificaciones (evaluador_id, evaluado_id, pedido_id, puntaje, comentario)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE puntaje = VALUES(puntaje), comentario = VALUES(comentario), pedido_id = VALUES(pedido_id)'
+        )->execute([$evaluadorId, $evaluadoId, $pedidoId, $puntaje, mb_substr($comentario, 0, 280)]);
+    }
+
+    // ---------------------------------------------------------------- tema
+
+    public function tema(int $usuarioId): string
+    {
+        $stmt = $this->pdo->prepare('SELECT tema FROM preferencias_usuario WHERE usuario_id = ?');
+        $stmt->execute([$usuarioId]);
+        $tema = $stmt->fetchColumn();
+
+        return $tema === 'oscuro' ? 'oscuro' : 'claro';
+    }
+
+    public function guardarTema(int $usuarioId, string $tema): void
+    {
+        $tema = $tema === 'oscuro' ? 'oscuro' : 'claro';
+
+        $this->pdo->prepare(
+            'INSERT INTO preferencias_usuario (usuario_id, tema) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE tema = VALUES(tema)'
+        )->execute([$usuarioId, $tema]);
+    }
 }

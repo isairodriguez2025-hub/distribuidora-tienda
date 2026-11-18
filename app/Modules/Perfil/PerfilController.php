@@ -66,6 +66,7 @@ final class PerfilController
             'valores'     => [],
             'avatarUrl'   => AvatarService::url($id),
             'mensaje'     => null,
+            'calificacion' => $this->repo->calificacion($id),
         ]);
     }
 
@@ -384,5 +385,73 @@ final class PerfilController
         Session::destruir();
 
         return Response::redirect('/login?cuenta=eliminada');
+    }
+
+    // -------------------------------------------------------------- ajustes
+
+    /** GET /perfil/ajustes */
+    public function ajustes(Request $peticion): Response
+    {
+        return $this->vista('perfil/ajustes', [
+            'titulo' => 'Ajustes',
+            'tema'   => $this->repo->tema($this->usuarioId()),
+            'ok'     => $peticion->query('ok', '') !== '',
+        ]);
+    }
+
+    /** POST /perfil/tema */
+    public function guardarTema(Request $peticion): Response
+    {
+        $this->repo->guardarTema($this->usuarioId(), (string) $peticion->input('tema', 'claro'));
+
+        return Response::redirect('/perfil/ajustes?ok=1');
+    }
+
+    /** GET /ayuda */
+    public function ayuda(Request $peticion): Response
+    {
+        return $this->vista('perfil/ayuda', ['titulo' => 'Ayuda']);
+    }
+
+    // -------------------------------------------------------- calificaciones
+
+    /** POST /calificar */
+    public function calificar(Request $peticion): Response
+    {
+        $evaluador = $this->usuarioId();
+        $evaluado  = (int) $peticion->input('evaluado_id', 0);
+        $puntaje   = (int) $peticion->input('puntaje', 0);
+        $pedido    = (int) $peticion->input('pedido_id', 0) ?: null;
+
+        // Solo se vuelve a una ruta interna: evita que el formulario sirva de
+        // puente para redirigir a otro sitio.
+        $volver = (string) $peticion->input('volver', '/perfil');
+        if (!str_starts_with($volver, '/') || str_starts_with($volver, '//')) {
+            $volver = '/perfil';
+        }
+
+        $permitidos = ['comercio', 'mayorista', 'repartidor'];
+        $rolEvaluador = $this->repo->rolDe($evaluador);
+        $rolEvaluado  = $this->repo->rolDe($evaluado);
+
+        $valido = $evaluado > 0
+            && $evaluado !== $evaluador
+            && $puntaje >= 1 && $puntaje <= 5
+            && in_array($rolEvaluador, $permitidos, true)
+            && in_array($rolEvaluado, $permitidos, true);
+
+        if (!$valido) {
+            return Response::redirect($volver . (str_contains($volver, '?') ? '&' : '?') . 'cal=error');
+        }
+
+        $this->repo->calificar(
+            $evaluador,
+            $evaluado,
+            $puntaje,
+            $pedido,
+            (string) $peticion->input('comentario', ''),
+        );
+
+        return Response::redirect($volver . (str_contains($volver, '?') ? '&' : '?') . 'cal=ok');
     }
 }
