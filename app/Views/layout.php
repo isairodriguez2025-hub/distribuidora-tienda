@@ -451,11 +451,11 @@ $enCarrito = str_starts_with((string) ($_SERVER['REQUEST_URI'] ?? ''), '/carrito
 <?php if ($usuario !== null && $rolActual === 'comercio' && !$enCarrito): ?>
     <?php $articulos = \App\Modules\Carrito\CarritoContador::paraUsuario((int) $usuario); ?>
     <a class="fab-carrito" href="/carrito" aria-label="Ir al carrito<?= $articulos > 0 ? ' (' . $articulos . ' artículos)' : '' ?>">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            <circle cx="8.5" cy="20.5" r="1.6" fill="currentColor" stroke="none"></circle>
+            <circle cx="18.5" cy="20.5" r="1.6" fill="currentColor" stroke="none"></circle>
+            <path d="M2.5 3h2.2l2.5 11.6a1.9 1.9 0 0 0 1.9 1.5h8.6a1.9 1.9 0 0 0 1.85-1.45L21.5 7H5.4"></path>
         </svg>
         <?php if ($articulos > 0): ?>
             <span class="fab-carrito__badge"><?= $articulos > 99 ? '99+' : $articulos ?></span>

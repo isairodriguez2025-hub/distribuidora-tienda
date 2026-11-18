@@ -1135,8 +1135,8 @@ a, button, .boton, .carrito-boton, [role="button"] {
     -webkit-touch-callout: none;
     outline: none;
     border-radius: 50%;
-    overflow: hidden;
-    isolation: isolate;
+    /* Sin overflow: hidden el globo del contador puede salir del círculo;
+       el recorte era lo que lo dejaba en una franja roja. */
     -webkit-appearance: none;
 }
 .fab-carrito:focus { outline: none; }
