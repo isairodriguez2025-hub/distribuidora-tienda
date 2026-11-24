@@ -46,6 +46,17 @@ final class Response
         return $r;
     }
 
+    /** Descarga con nombre de archivo (plantillas CSV, exportaciones). */
+    public static function descarga(string $nombre, string $contenido, string $mime = 'text/csv; charset=UTF-8'): self
+    {
+        $respuesta = new self($contenido, 200);
+        $respuesta->headers['Content-Type'] = $mime;
+        $respuesta->headers['Content-Disposition'] = 'attachment; filename="' . $nombre . '"';
+        $respuesta->headers['Cache-Control'] = 'no-store';
+
+        return $respuesta;
+    }
+
     /** Respuesta binaria desde un archivo del disco (assets estáticos). */
     public static function archivo(string $ruta, string $mime, int $status = 200): self
     {

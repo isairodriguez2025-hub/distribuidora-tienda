@@ -173,6 +173,27 @@ final class CatalogoController
         return Response::json(['ok' => true, 'data' => $linea]);
     }
 
+    /** GET /mayorista/productos/plantilla — CSV con los encabezados exactos. */
+    public function plantillaCsv(Request $peticion): Response
+    {
+        $filas = [
+            ['sku', 'nombre', 'precio_base', 'stock_disponible', 'peso_kg', 'volumen_m3', 'unidad_venta', 'contenido', 'cantidad_minima', 'multiplo_venta'],
+            ['AZU-50', 'Azúcar estándar 50 kg', '1250.00', '20', '50', '0.05', 'Caja', '12 pzas', '1', '1'],
+            ['CAF-1KG', 'Café molido 1 kg', '185.50', '40', '1', '0.004', 'Pieza', '1 pza', '1', '1'],
+        ];
+
+        $csv = '';
+        foreach ($filas as $fila) {
+            $csv .= implode(',', array_map(
+                static fn ($v): string => str_contains((string) $v, ',') ? '"' . $v . '"' : (string) $v,
+                $fila
+            )) . "\r\n";
+        }
+
+        // El BOM hace que Excel respete los acentos al abrirlo.
+        return Response::descarga('plantilla-inventario.csv', "\xEF\xBB\xBF" . $csv);
+    }
+
     public function importarCsv(Request $peticion): Response
     {
         $archivo = $peticion->file('csv') ?? [];
