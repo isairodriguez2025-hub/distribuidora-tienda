@@ -21,7 +21,7 @@ if ($filas === '') {
 
 $contenido = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">'
     . '<div><h1 style="margin:0">Ventas</h1><p class="silencio" style="margin:2px 0 0">Últimas 100 ventas de la caja.</p></div>'
-    . '<a href="/pos" class="boton--claro">Ir a caja</a></div>'
+    . '<a href="/pos" class="boton boton--claro">Ir a caja</a></div>'
     . ($mensaje !== null ? '<div class="aviso aviso--ok">' . $e($mensaje) . '</div>' : '')
     . '<div class="tarjeta" style="padding:0;overflow:hidden"><table class="tabla-pos">'
     . '<thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th><th></th></tr></thead>'

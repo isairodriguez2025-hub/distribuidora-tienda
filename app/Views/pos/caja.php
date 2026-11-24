@@ -111,16 +111,16 @@ $contenido = '<div class="pos" data-iva-incluido="' . ($ivaIncluido ? '1' : '0')
     . '</div>'
 
     . '<button type="button" id="pos-cobrar" class="pos__cobrar" disabled>Cobrar</button>'
-    . '<button type="button" id="pos-limpiar" class="boton--claro" style="width:100%;margin-top:8px">Limpiar ticket</button>'
+    . '<button type="button" id="pos-limpiar" class="boton boton--claro" style="width:100%;margin-top:8px">Limpiar ticket</button>'
     . '<div style="display:flex;gap:8px;margin-top:12px">'
-    . '<a href="/pos/ventas" class="boton--claro" style="flex:1;text-align:center">Ventas</a>'
-    . '<a href="/pos/productos" class="boton--claro" style="flex:1;text-align:center">Inventario</a>'
+    . '<a href="/pos/ventas" class="boton boton--claro" style="flex:1;text-align:center">Ventas</a>'
+    . '<a href="/pos/productos" class="boton boton--claro" style="flex:1;text-align:center">Inventario</a>'
     . '</div>'
     . '<form method="post" action="/pos/turno/cerrar" style="margin-top:10px" '
     . 'onsubmit="return confirm(\'¿Cerrar la caja? Se calculará el corte del turno.\')">'
     . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
     . '<input type="hidden" name="efectivo_contado" value="0">'
-    . '<button type="submit" class="boton--claro" style="width:100%">Cerrar caja</button></form>'
+    . '<button type="submit" class="boton boton--claro" style="width:100%">Cerrar caja</button></form>'
     . '</aside></div>';
 
 $contenido .= '<div id="pos-modal" class="pos-modal" hidden><div class="pos-modal__caja">'
@@ -128,7 +128,7 @@ $contenido .= '<div id="pos-modal" class="pos-modal" hidden><div class="pos-moda
     . '<h2 id="pos-modal-titulo">Venta registrada</h2>'
     . '<p class="silencio" id="pos-modal-detalle"></p>'
     . '<div style="display:grid;gap:8px;margin-top:18px">'
-    . '<a id="pos-modal-ticket" class="boton--claro" target="_blank" rel="noopener" style="text-align:center">Ver ticket</a>'
+    . '<a id="pos-modal-ticket" class="boton boton--claro" target="_blank" rel="noopener" style="text-align:center">Ver ticket</a>'
     . '<button type="button" onclick="document.getElementById(\'pos-modal\').hidden=true;location.reload()">Nueva venta</button>'
     . '</div></div></div>';
 

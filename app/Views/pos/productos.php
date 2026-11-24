@@ -24,7 +24,7 @@ foreach ($productos as $p) {
         . number_format((float) $p['stock'], 2) . ' ' . $e((string) $p['unidad']) . '</span></td>'
         . '<td data-label="Mínimo">' . number_format((float) $p['stock_minimo'], 2) . '</td>'
         . '<td data-label="Acciones" style="white-space:nowrap">'
-        . '<a class="pista" href="/pos/productos?editar=' . (int) $p['id'] . '">Editar</a> · '
+        . '<a class="pista" href="/pos/productos?editar=' . (int) $p['id'] . '">Editar</a><span class="sep"> · </span>'
         . '<form method="post" action="/pos/productos/' . (int) $p['id'] . '/eliminar" style="display:inline" '
         . 'onsubmit="return confirm(\'¿Desactivar este producto?\')">'
         . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
@@ -57,7 +57,7 @@ $esEdicion = $editar !== null;
 
 $contenido = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">'
     . '<div><h1 style="margin:0">Inventario</h1><p class="silencio" style="margin:2px 0 0">Precios, existencias y reposición.</p></div>'
-    . '<a href="/pos" class="boton--claro">Ir a caja</a></div>'
+    . '<a href="/pos" class="boton boton--claro">Ir a caja</a></div>'
     . ($mensaje !== null ? '<div class="aviso aviso--ok">' . $e($mensaje) . '</div>' : '')
     . ($error !== null ? '<div class="aviso aviso--error">' . $e($error) . '</div>' : '')
     . $bloqueSug
@@ -98,7 +98,7 @@ $contenido = '<div style="display:flex;justify-content:space-between;align-items
     . '<label class="campo" style="flex-direction:row;align-items:center;gap:8px;margin-top:6px">'
     . '<input type="checkbox" name="reorden_auto" value="1"' . ((int) $ajustes['reorden_auto'] === 1 ? ' checked' : '') . '>'
     . '<span>Avisarme cuando un producto llegue al mínimo</span></label>'
-    . '<button type="submit" class="boton--claro" style="width:100%;margin-top:12px">Guardar ajustes</button></form></div>'
+    . '<button type="submit" class="boton boton--claro" style="width:100%;margin-top:12px">Guardar ajustes</button></form></div>'
     . '</div></div>';
 
 require __DIR__ . '/../layout.php';

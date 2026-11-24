@@ -41,8 +41,8 @@ $contenido = '<div style="display:flex;justify-content:space-between;align-items
     . $e(date('d/m/Y H:i', strtotime((string) $turno['abierto_at'])))
     . ($turno['cerrado_at'] !== null ? ' → ' . $e(date('d/m/Y H:i', strtotime((string) $turno['cerrado_at']))) : ' (abierto)')
     . '</p></div>'
-    . '<div style="display:flex;gap:8px"><button type="button" class="boton--claro" onclick="window.print()">Imprimir</button>'
-    . '<a href="/pos" class="boton--claro">Ir a caja</a></div></div>'
+    . '<div style="display:flex;gap:8px"><button type="button" class="boton boton--claro" onclick="window.print()">Imprimir</button>'
+    . '<a href="/pos" class="boton boton--claro">Ir a caja</a></div></div>'
 
     . '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-bottom:18px">'
     . '<div class="tarjeta" style="padding:16px"><div class="pista">Total vendido</div><div class="cifra">$' . number_format($total, 2) . '</div></div>'

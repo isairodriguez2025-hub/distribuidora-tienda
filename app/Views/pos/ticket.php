@@ -17,7 +17,7 @@ foreach ($lineas as $l) {
 
 $pago = $pagos[0] ?? null;
 
-$contenido = '<style>
+$contenido = '<style nonce="' . $e($nonce ?? '') . '">
 .ticket { width: 300px; margin: 0 auto; background: #fff; padding: 18px; font-family: ui-monospace, "DejaVu Sans Mono", monospace; font-size: 12.5px; color: #111; border: 1px solid #e8e6df; border-radius: 8px; }
 .ticket h2 { text-align: center; margin: 0 0 2px; font-size: 15px; letter-spacing: .5px; }
 .ticket .t-centro { text-align: center; }
@@ -38,7 +38,7 @@ $contenido = '<style>
 </style>'
     . '<div class="no-print" style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">'
     . '<button type="button" onclick="window.print()">Imprimir</button>'
-    . '<a href="/pos" class="boton--claro">Volver a caja</a></div>'
+    . '<a href="/pos" class="boton boton--claro">Volver a caja</a></div>'
     . '<div class="ticket">'
     . '<h2>DIDI2</h2>'
     . '<div class="t-centro t-small">Comprobante de venta</div>'
@@ -47,7 +47,7 @@ $contenido = '<style>
     . '<div class="t-fila"><span>Fecha</span><span>' . $e(date('d/m/Y H:i', strtotime((string) $venta['created_at']))) . '</span></div>'
     . '<div class="t-fila"><span>Estado</span><span>' . $e((string) $venta['estado']) . '</span></div>'
     . '<div class="t-linea"></div>'
-    . '<table>' . $filas . '</table>'
+    . '<table class="tabla-recibo">' . $filas . '</table>'
     . '<div class="t-linea"></div>'
     . '<div class="t-fila"><span>Subtotal</span><span>$' . number_format((float) $venta['subtotal'], 2) . '</span></div>'
     . '<div class="t-fila"><span>IVA</span><span>$' . number_format((float) $venta['iva'], 2) . '</span></div>'

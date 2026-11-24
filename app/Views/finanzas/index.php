@@ -39,6 +39,7 @@ $selector = '<form method="get" action="/finanzas" class="fin-filtro">'
     . '<input type="hidden" name="tab" value="gastos">'
     . '<label><span>Periodo</span><select name="periodo" onchange="this.form.submit()">' . $opciones . '</select></label>'
     . '<noscript><button type="submit" class="boton boton--claro">Aplicar</button></noscript>'
+    . '<span class="fin-filtro__nota">El gráfico y la lista se actualizan al elegir el periodo.</span>'
     . '</form>';
 
 // ------------------------------------------------------------------- gráfica
@@ -149,8 +150,39 @@ if ($listaFacturas === '') {
     $listaFacturas = '<div class="vacio">Todavía no tienes facturas. El mayorista las emite al cerrar cada pedido.</div>';
 }
 
+// La lista muestra los últimos ocho; el resto queda a un clic para que la
+// página no crezca con cada pedido del año.
+$visibles = '';
+$resto = '';
+$totalGastos = count($gastos['pedidos']);
+$i = 0;
+foreach ($gastos['pedidos'] as $p) {
+    $fecha = strtotime((string) $p['created_at']);
+    $estado = $estados[(string) $p['estado']] ?? (string) $p['estado'];
+    $ficha = '<a class="gasto-ficha" href="/pedidos/' . $e((string) $p['uuid']) . '">'
+        . '<div class="gasto-ficha__fecha"><b>' . date('d', $fecha) . '</b><span>' . $mesesCortos[(int) date('n', $fecha)] . '</span></div>'
+        . '<div class="gasto-ficha__datos"><strong>' . $e((string) ($p['mayorista'] ?? 'Mayorista')) . '</strong>'
+        . '<span>' . date('d/m/Y', $fecha) . ' · ' . $e($estado) . '</span></div>'
+        . '<div class="gasto-ficha__monto">' . $dinero((float) $p['total']) . '</div></a>';
+    if ($i < 8) {
+        $visibles .= $ficha;
+    } else {
+        $resto .= $ficha;
+    }
+    $i++;
+}
+
+if ($visibles === '') {
+    $visibles = '<div class="vacio vacio--accion"><p>No hay gastos en este periodo.</p>'
+        . '<a class="boton boton--claro" href="/buscar">Explorar proveedores</a></div>';
+}
+
 $panelGastos = '<div class="fin-panel">' . $selector . $grafica
-    . '<h2 class="fin-subtitulo">Cada gasto</h2><div class="gasto-lista">' . $fichas . '</div></div>';
+    . '<h2 class="fin-subtitulo">Cada gasto <span class="fin-cuenta">' . $totalGastos . '</span></h2>'
+    . '<div class="gasto-lista">' . $visibles . '</div>'
+    . ($resto !== '' ? '<details class="gasto-resto"><summary>Ver los ' . $totalGastos . ' gastos del periodo</summary>'
+        . '<div class="gasto-lista">' . $resto . '</div></details>' : '')
+    . '</div>';
 
 $panelFacturas = '<div class="fin-panel">'
     . '<p class="fin-nota">Las emite el mayorista. Aquí ves el documento tal como quedó registrado.</p>'

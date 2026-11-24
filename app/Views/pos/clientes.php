@@ -16,7 +16,7 @@ if ($filas === '') {
 
 $contenido = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px">'
     . '<div><h1 style="margin:0">Clientes de la caja</h1><p class="silencio" style="margin:2px 0 0">Para tickets con nombre o factura.</p></div>'
-    . '<a href="/pos" class="boton--claro">Ir a caja</a></div>'
+    . '<a href="/pos" class="boton boton--claro">Ir a caja</a></div>'
     . ($mensaje !== null ? '<div class="aviso aviso--ok">' . $e($mensaje) . '</div>' : '')
     . '<div class="pos-inv">'
     . '<div class="tarjeta" style="padding:0;overflow:hidden"><table class="tabla-pos">'

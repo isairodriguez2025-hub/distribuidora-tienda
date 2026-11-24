@@ -43,7 +43,7 @@ foreach ($pedidos as $p) {
     } elseif ($estado === 'aceptado') {
         $acciones = '<form method="post" action="/pedidos/' . $e($p['uuid']) . '/preparando" style="display:inline;margin:0">'
             . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
-            . '<button type="submit" class="boton--claro" style="padding:6px 12px;font-size:13px">Marcar preparando</button></form>';
+            . '<button type="submit" class="boton boton--claro" style="padding:6px 12px;font-size:13px">Marcar preparando</button></form>';
     } elseif ($estado === 'preparando') {
         $acciones = '<form method="post" action="/pedidos/' . $e($p['uuid']) . '/listo" style="display:inline;margin:0">'
             . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'

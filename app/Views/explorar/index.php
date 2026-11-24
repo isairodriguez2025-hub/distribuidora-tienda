@@ -47,9 +47,12 @@ foreach ($extra as [$href, $titulo, $descripcion, $clave]) {
         default      => Iconos::svg('/buscar', 19),
     };
 
-    $atajos .= '<a class="explorar-atajo" href="' . $e($href) . '" title="' . $e($descripcion) . '">'
-        . $icono . '<span>' . $e($titulo) . '</span>'
+    $atajos .= '<a class="explorar-atajo" href="' . $e($href) . '">'
+        . '<span class="explorar-atajo__icono">' . $icono . '</span>'
+        . '<span class="explorar-atajo__texto"><strong>' . $e($titulo) . '</strong>'
+        . '<span>' . $e($descripcion) . '</span></span>'
         . ($clave === 'mensajes' ? $globo((int) ($resumen['mensajes'] ?? 0)) : '')
+        . '<span class="explorar-atajo__flecha" aria-hidden="true">&rsaquo;</span>'
         . '</a>';
 }
 
@@ -71,16 +74,20 @@ $bloqueMetricas = $fichasMetricas !== ''
     : '';
 
 $contenido = '<header class="explorar-saludo">'
-    . '<h1>Hola, ' . $e($nombre) . '!</h1>'
-    . '<p>¿Con qué empezamos hoy?</p>'
+    . '<div><h1>Hola, ' . $e($nombre) . '!</h1>'
+    . '<p>¿Con qué empezamos hoy?</p></div>'
+    . '<a class="boton explorar-saludo__cta" href="/buscar">Buscar productos</a>'
     . '</header>'
 
+    . '<div class="explorar-cuerpo">'
+    . '<div class="explorar-col">'
     . $bloqueMetricas
-
     . '<section class="explorar-tarjeta">'
+    . '<h2 class="explorar-titulo">Tu día a día</h2>'
     . '<div class="explorar-grid">' . $botones . '</div>'
     . '</section>'
-
-    . $bloqueAtajos;
+    . '</div>'
+    . '<aside class="explorar-lado">' . $bloqueAtajos . '</aside>'
+    . '</div>';
 
 require __DIR__ . '/../layout.php';

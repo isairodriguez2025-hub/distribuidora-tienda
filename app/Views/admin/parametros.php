@@ -11,7 +11,7 @@ foreach ($parametros as $p) {
         . '<td>' . $tipoBadge . '</td>'
         . '<td>' . $e($p['descripcion'] ?? '') . '</td>'
         . '<td style="text-align:right">v' . $p['version'] . '</td>'
-        . '<td><button type="button" class="boton boton--claro param-save" style="padding:4px 10px;font-size:12px" data-clave="' . $e($p['clave']) . '">Guardar</button></td></tr>';
+        . '<td><button type="button" class="boton boton--claro param-save" data-clave="' . $e($p['clave']) . '">Guardar</button></td></tr>';
 }
 
 $contenido = '<h1>Parámetros del sistema</h1>'

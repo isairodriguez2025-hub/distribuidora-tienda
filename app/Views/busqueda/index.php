@@ -56,17 +56,17 @@ foreach ($resultados as $i => $r) {
     $paso = max(1, (int) $r['multiplo_venta']);
 
     $fichas .= '<article class="ficha" data-i="' . $i . '" data-lat="' . $e((string) $r['mayorista']['latitud']) . '" data-lng="' . $e((string) $r['mayorista']['longitud']) . '">'
-        . '<div class="ficha__izq">'
+        . '<div class="ficha__cab">'
         . '<h3>' . $e($r['nombre']) . '</h3>'
-        . '<p class="ficha__prov">' . $e($r['mayorista']['nombre'])
-        . ' <span class="badge">' . $e($r['categoria']) . '</span>'
-        . '<a class="ficha__ver" href="/mayoristas/' . $e($r['mayorista']['uuid']) . '">Ver mayorista</a></p>'
         . '<div class="ficha__precio">$' . number_format((float) $r['precio_base'], 2)
         . '<span>+ IVA · ' . $e($r['unidad_venta']) . ' de ' . $e($r['contenido']) . '</span></div>'
         . '</div>'
-        . '<div class="ficha__der">'
-        . '<span class="ficha__dist">' . $dist . ' km</span>'
-        . '<span class="ficha__stock">' . $stock . ' disponibles</span>';
+        . '<div class="ficha__meta">'
+        . '<span class="ficha__prov">' . $e($r['mayorista']['nombre'])
+        . ' <span class="badge">' . $e($r['categoria']) . '</span>'
+        . '<a class="ficha__ver" href="/mayoristas/' . $e($r['mayorista']['uuid']) . '">Ver</a></span>'
+        . ((float) $dist > 0 ? '<span class="ficha__dist">a ' . $dist . ' km</span>' : '')
+        . '</div>';
 
     if ($puedeComprar) {
         $fichas .= '<form method="post" action="/carrito/agregar" class="ficha__compra">'
@@ -79,10 +79,15 @@ foreach ($resultados as $i => $r) {
             . '<button type="button" class="stepper__mas" aria-label="Agregar uno">+</button>'
             . '</div>'
             . '<button type="submit" class="btn-agregar">Agregar</button>'
+            . '<span class="ficha__stock">' . $stock . ' disponibles</span>'
             . '</form>';
     }
 
-    $fichas .= '</div></article>';
+    if (!$puedeComprar) {
+        $fichas .= '<div class="ficha__compra"><span class="ficha__stock">' . $stock . ' disponibles</span></div>';
+    }
+
+    $fichas .= '</article>';
 }
 
 if ($fichas === '') {
@@ -149,10 +154,11 @@ $contenido = '<h1>Buscar productos</h1>'
     . '<button type="submit">Buscar</button>'
     . '</form>'
     . '<div class="buscador">'
-    . '<div class="buscador__mapa"><div id="mapa" class="mapa"></div></div>'
     . '<div class="buscador__resultados">' . $fichas
     . ($paginacion !== '' ? '<div class="paginacion">' . $paginacion . '</div>' : '')
-    . '</div></div>';
+    . '</div>'
+    . '<div class="buscador__mapa"><div id="mapa" class="mapa"></div></div>'
+    . '</div>';
 
 $estilos = <<<'CSS'
 .filtros {
@@ -232,7 +238,8 @@ $estilos = <<<'CSS'
 @media (min-width:992px) {
     /* 2/3 y 1/3, pero la columna de fichas nunca baja de 360 px: en monitores
        muy anchos el mapa se queda con el espacio sobrante. */
-    .buscador { grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr); gap:22px; }
+    /* Fichas a la izquierda (1/3) y mapa a la derecha (2/3). */
+    .buscador { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap:22px; }
     .buscador__mapa { position:sticky; top:76px; }
     .mapa { height:calc(100vh - 150px); min-height:520px; }
     .buscador__resultados {
@@ -255,7 +262,7 @@ $estilos = <<<'CSS'
 .ficha h3 { font-size:18px; font-weight:600; letter-spacing:-.01em; margin:0 0 4px; }
 .ficha__prov { font-size:13px; color:#6b7280; margin:0 0 10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .badge {
-    font-size:11px; font-weight:500; color:#6b7280; background:#f3f4f6;
+    font-size:12px; font-weight:500; color:#6b7280; background:#f3f4f6;
     padding:2px 9px; border-radius:999px; letter-spacing:0; white-space:nowrap;
 }
 .ficha__precio { font-size:22px; font-weight:700; letter-spacing:-.02em; color:#111827; }

@@ -19,7 +19,7 @@ foreach ($plantillas as $p) {
     $accion = $estado === 'activa'
         ? '<form method="post" action="/programados/' . (int) $p['id'] . '/pausada" style="display:inline;margin:0 6px 0 0">'
           . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'
-          . '<button type="submit" class="boton--claro" style="padding:5px 11px;font-size:12px">Pausar</button></form>'
+          . '<button type="submit" class="boton boton--claro" style="padding:5px 11px;font-size:12px">Pausar</button></form>'
         : ($estado === 'pausada'
             ? '<form method="post" action="/programados/' . (int) $p['id'] . '/activa" style="display:inline;margin:0 6px 0 0">'
               . '<input type="hidden" name="_csrf" value="' . $e($csrf) . '">'

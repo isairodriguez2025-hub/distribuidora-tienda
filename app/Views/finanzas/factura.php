@@ -68,7 +68,7 @@ $contenido = '<div class="factura-hoja-acciones">'
     . '</div>'
     . '</section>'
 
-    . '<table class="factura-hoja__tabla">'
+    . '<table class="factura-hoja__tabla tabla-recibo tabla-ancha">'
     . '<thead><tr><th>Concepto</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Importe</th></tr></thead>'
     . '<tbody>' . $conceptos . '</tbody>'
     . '</table>'

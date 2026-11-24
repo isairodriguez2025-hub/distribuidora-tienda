@@ -33,7 +33,7 @@ foreach ($ruta as $p) {
         . '<strong style="font-size:15px">' . $e($p['mayorista']) . ' → ' . $e($p['comercio']) . '</strong>'
         . '<span style="font-size:13px;color:#6b7280">' . $e($p['estado']) . '</span></div>'
         . '<p style="font-size:13px;color:#6b7280;margin:4px 0 10px">' . $e($p['calle']) . ', ' . $e($p['colonia']) . ', ' . $e($p['ciudad']) . '</p>'
-        . '<a href="/pedidos/' . $e($p['uuid']) . '" style="font-size:13px">Abrir pedido</a>'
+        . '<a class="enlace-accion" href="/pedidos/' . $e($p['uuid']) . '">Abrir pedido</a>'
         . '</article>';
 }
 if ($rutaHtml === '') {
