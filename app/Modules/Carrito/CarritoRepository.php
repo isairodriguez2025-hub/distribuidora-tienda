@@ -53,13 +53,40 @@ final class CarritoRepository
         return $stmt->fetchAll() ?: [];
     }
 
+    /**
+     * Suma a la cantidad existente: volver a agregar el mismo producto no debe
+     * borrar lo que ya había en el carrito.
+     */
     public function agregar(int $carritoId, int $productoId, int $cantidad): void
     {
         $stmt = $this->pdo->prepare(
             'INSERT INTO carrito_items (carrito_id, producto_id, cantidad) VALUES (?,?,?)
-             ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad)'
+             ON DUPLICATE KEY UPDATE cantidad = cantidad + VALUES(cantidad)'
         );
         $stmt->execute([$carritoId, $productoId, $cantidad]);
+    }
+
+    /** Unidades del producto que ya están en el carrito (0 si no está). */
+    public function cantidadDe(int $carritoId, int $productoId): int
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COALESCE(cantidad, 0) FROM carrito_items WHERE carrito_id = ? AND producto_id = ? LIMIT 1'
+        );
+        $stmt->execute([$carritoId, $productoId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** Quita del carrito los productos indicados (los que ya se convirtieron en pedido). */
+    public function quitarProductos(int $carritoId, array $productoIds): void
+    {
+        if ($productoIds === []) {
+            return;
+        }
+
+        $marcas = implode(',', array_fill(0, count($productoIds), '?'));
+        $this->pdo->prepare("DELETE FROM carrito_items WHERE carrito_id = ? AND producto_id IN ($marcas)")
+            ->execute([$carritoId, ...array_map('intval', $productoIds)]);
     }
 
     public function quitar(int $carritoId, int $productoId): void

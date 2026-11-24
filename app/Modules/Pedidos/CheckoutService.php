@@ -56,12 +56,30 @@ final class CheckoutService
             return ['ok' => false, 'mensaje' => 'El carrito está vacío.', 'codigo' => 'CARRITO_VACIO'];
         }
 
-        if (!$resumen['puede_checkout']) {
+        // Solo se cobran los proveedores que ya alcanzaron su mínimo; el resto
+        // se queda en el carrito para completarlo después.
+        $gruposListos = array_values(array_filter(
+            $resumen['grupos'],
+            static fn (array $grupo): bool => !empty($grupo['listo'])
+        ));
+
+        if ($gruposListos === []) {
             return [
                 'ok'      => false,
                 'mensaje' => implode(' ', $resumen['problemas']),
                 'codigo'  => 'CARRITO_INCOMPLETO',
             ];
+        }
+
+        $totalCobrar = (float) $resumen['total_listo'];
+        $subtotalCobrar = (float) $resumen['subtotal_listo'];
+        $ivaCobrar = (float) $resumen['iva_listo'];
+        $productosCobrados = [];
+
+        foreach ($gruposListos as $grupo) {
+            foreach ($grupo['items'] as $item) {
+                $productosCobrados[] = (int) $item['producto_id'];
+            }
         }
 
         $this->pdo->beginTransaction();
@@ -72,12 +90,12 @@ final class CheckoutService
             $this->pdo->prepare(
                 "INSERT INTO checkouts (uuid, comercio_id, idempotency_key, total, estado)
                  VALUES (?,?,?,?,'pendiente_pago')"
-            )->execute([$checkoutUuid, $comercioId, $idempotencyKey, $resumen['total']]);
+            )->execute([$checkoutUuid, $comercioId, $idempotencyKey, $totalCobrar]);
 
             $checkoutId = (int) $this->pdo->lastInsertId();
             $pedidosCreados = [];
 
-            foreach ($resumen['grupos'] as $grupo) {
+            foreach ($gruposListos as $grupo) {
                 $pedidoUuid = UsuarioRepository::uuid4();
 
                 $this->pdo->prepare(
@@ -143,10 +161,11 @@ final class CheckoutService
 
             $respuesta = [
                 'checkout_uuid' => $checkoutUuid,
-                'total'         => $resumen['total'],
-                'subtotal'      => $resumen['subtotal'],
-                'iva'           => $resumen['iva'],
+                'total'         => $totalCobrar,
+                'subtotal'      => $subtotalCobrar,
+                'iva'           => $ivaCobrar,
                 'pedidos'       => $pedidosCreados,
+                'quedan'        => max(0, (int) $resumen['total_grupos'] - count($gruposListos)),
                 'expira_en'     => self::TTL_RESERVA_MIN . ' minutos',
             ];
 
@@ -154,10 +173,11 @@ final class CheckoutService
 
             $this->pdo->commit();
 
-            $this->carrito->vaciar($comercioId);
+            // Solo salen del carrito los productos que ya son pedido.
+            $this->carrito->quitarProductos($comercioId, $productosCobrados);
 
             $this->auditoria->log('checkout_creado', $usuarioId, 'checkout', $checkoutUuid, [
-                'total'   => $resumen['total'],
+                'total'   => $totalCobrar,
                 'pedidos' => count($pedidosCreados),
             ], '0.0.0.0');
 

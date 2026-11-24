@@ -62,6 +62,9 @@ $contenido = '<h1>Mi carrito</h1>'
           . '<div><div style="font-size:13px;color:#6b7280">Subtotal $' . number_format((float) $resumen['subtotal'], 2)
           . ' · IVA $' . number_format((float) $resumen['iva'], 2) . '</div>'
           . '<div style="font-size:24px;font-weight:650">$' . number_format((float) $resumen['total'], 2) . '</div></div>'
+          . ((int) ($resumen['listos'] ?? 0) > 0 && (int) $resumen['listos'] < (int) ($resumen['total_grupos'] ?? 0)
+              ? '<p class="checkout__nota">Solo se cobrarán los ' . (int) $resumen['listos'] . ' proveedores que alcanzan su mínimo; el resto sigue en el carrito.</p>'
+              : '')
           . ($resumen['puede_checkout']
               ? '<a class="boton" href="/checkout">Continuar al pago</a>'
               : '<span style="font-size:14px;color:#a56a12">Corrige los avisos para continuar</span>')

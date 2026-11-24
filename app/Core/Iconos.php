@@ -29,6 +29,7 @@ final class Iconos
         '/admin/kyc'           => '<circle cx="12" cy="12" r="9"></circle><path d="m8.5 12 2.4 2.4 4.6-4.6"></path>',
         '/mensajes'            => '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.9-.9L3 21l1.9-4.6A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z"></path>',
         '/perfil'              => '<circle cx="12" cy="8" r="3.6"></circle><path d="M4.5 20a7.5 7.5 0 0 1 15 0"></path>',
+        '/carrito'             => '<circle cx="9" cy="20" r="1.5"></circle><circle cx="18" cy="20" r="1.5"></circle><path d="M2.5 3h2.2l2.4 11.2a1.8 1.8 0 0 0 1.8 1.4h8.4a1.8 1.8 0 0 0 1.75-1.4L21 7H5.3"></path>',
     ];
 
     public static function svg(string $ruta, int $tamano = 21): string

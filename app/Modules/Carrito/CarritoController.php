@@ -50,6 +50,45 @@ final class CarritoController
         return $id === false ? null : (int) $id;
     }
 
+    /** Cuerpo del cajón lateral, sin layout, para inyectarlo por fetch. */
+    private function fragmentoPanel(int $comercioId): string
+    {
+        $vista = new View($this->directorioVistas, base64_encode(random_bytes(16)));
+
+        return $vista->render('carrito/panel', [
+            'resumen' => $this->carrito->recalcular($comercioId),
+            'csrf'    => Csrf::token(),
+        ]);
+    }
+
+    private function esAjax(Request $peticion): bool
+    {
+        return (string) $peticion->input('ajax', '') !== '';
+    }
+
+    /** Respuesta del panel: contador nuevo y HTML recalculado. */
+    private function jsonCarrito(?int $comercioId, string $mensaje, bool $ok = true): Response
+    {
+        return Response::json([
+            'ok'       => $ok,
+            'mensaje'  => $mensaje,
+            'contador' => CarritoContador::paraUsuario($this->usuarioId()),
+            'panel'    => $comercioId !== null ? $this->fragmentoPanel($comercioId) : '',
+        ], $ok ? 200 : 422);
+    }
+
+    /** GET /carrito/panel */
+    public function panel(Request $peticion): Response
+    {
+        $comercioId = $this->comercioId();
+
+        if ($comercioId === null) {
+            return Response::html('<div class="cvacio"><p>Inicia sesión como comercio.</p></div>');
+        }
+
+        return Response::html($this->fragmentoPanel($comercioId));
+    }
+
     public function ver(Request $peticion): Response
     {
         $comercioId = $this->comercioId();
@@ -80,6 +119,10 @@ final class CarritoController
             (int) $peticion->input('cantidad', 1),
         );
 
+        if ($this->esAjax($peticion)) {
+            return $this->jsonCarrito($comercioId, (string) $resultado['mensaje'], (bool) $resultado['ok']);
+        }
+
         $destino = (string) $peticion->input('volver', '/carrito');
 
         return Response::redirect($destino . ($resultado['ok'] ? '?ok=1' : '?error=' . urlencode($resultado['mensaje'])));
@@ -102,6 +145,10 @@ final class CarritoController
             $this->carrito->actualizar($comercioId, $productoUuid, $cantidad);
         }
 
+        if ($this->esAjax($peticion)) {
+            return $this->jsonCarrito($comercioId, 'Carrito actualizado.');
+        }
+
         return Response::redirect('/carrito?ok=1');
     }
 
@@ -113,6 +160,10 @@ final class CarritoController
             $this->carrito->quitar($comercioId, (string) $peticion->input('producto', ''));
         }
 
+        if ($this->esAjax($peticion)) {
+            return $this->jsonCarrito($comercioId, 'Producto eliminado del carrito.');
+        }
+
         return Response::redirect('/carrito?ok=1');
     }
 
@@ -122,6 +173,10 @@ final class CarritoController
 
         if ($comercioId !== null) {
             $this->carrito->vaciar($comercioId);
+        }
+
+        if ($this->esAjax($peticion)) {
+            return $this->jsonCarrito($comercioId, 'Carrito vaciado.');
         }
 
         return Response::redirect('/carrito');

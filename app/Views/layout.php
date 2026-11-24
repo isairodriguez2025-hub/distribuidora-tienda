@@ -88,6 +88,16 @@ if ($usuario !== null) {
     }
 }
 
+// Contador del carrito: se usa en el botón lateral y en la barra inferior.
+$articulosCarrito = 0;
+if ($usuario !== null && $rol === 'comercio') {
+    try {
+        $articulosCarrito = \App\Modules\Carrito\CarritoContador::paraUsuario((int) $usuario);
+    } catch (\Throwable) {
+        $articulosCarrito = 0;
+    }
+}
+
 /**
  * Iconos de la barra lateral. Se dibujan con trazo y heredan el color, así
  * funcionan igual en claro y en oscuro sin duplicar archivos.
@@ -120,17 +130,25 @@ $enlacePrincipal = match ($rol) {
 $inferior = [
     ['/explorar', 'Explorar'],
     $enlacePrincipal,
-    ['/mensajes', 'Mensajes'],
-    ['/perfil', 'Cuenta'],
 ];
+if ($rol === 'comercio') {
+    $inferior[] = ['/carrito', 'Carrito'];
+}
+$inferior[] = ['/mensajes', 'Mensajes'];
+$inferior[] = ['/perfil', 'Cuenta'];
 
 $navInferior = '';
 foreach ($inferior as [$href, $texto]) {
     $activo = str_starts_with($uriActual, $href);
-    $globo = $href === '/mensajes' && $sinLeerMsg > 0
-        ? '<span class="inferior__globo">' . ($sinLeerMsg > 9 ? '9+' : $sinLeerMsg) . '</span>'
-        : '';
+    $globo = '';
+    if ($href === '/mensajes' && $sinLeerMsg > 0) {
+        $globo = '<span class="inferior__globo">' . ($sinLeerMsg > 9 ? '9+' : $sinLeerMsg) . '</span>';
+    } elseif ($href === '/carrito') {
+        $globo = '<span class="inferior__globo carrito-globo" data-carrito-badge' . ($articulosCarrito > 0 ? '' : ' hidden') . '>'
+            . ($articulosCarrito > 99 ? '99+' : (string) $articulosCarrito) . '</span>';
+    }
     $navInferior .= '<a class="inferior__item' . ($activo ? ' activo' : '') . '" href="' . $e($href) . '"'
+        . ($href === '/carrito' ? ' data-abrir-carrito' : '')
         . ($activo ? ' aria-current="page"' : '') . '>'
         . '<span class="inferior__icono">' . $iconoNav($href) . $globo . '</span>'
         . '<span class="inferior__texto">' . $e($texto) . '</span></a>';
@@ -373,7 +391,7 @@ foreach ($inferior as [$href, $texto]) {
             h1 { font-size: 22px; }
         }
     </style>
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="/assets/css/app.css?v=20261118r">
 </head>
 <body class="<?= !empty($anchoCompleto) ? 'ancho-completo' : '' ?><?= !empty($auth) ? ' auth' : '' ?>">
 <?php if (empty($auth)): ?>
@@ -383,6 +401,20 @@ foreach ($inferior as [$href, $texto]) {
         <img class="lateral__logo" src="/assets/img/ares-logo.svg" alt="" width="38" height="38">
         <span class="lateral__nombre">Ares <em>· B2B</em></span>
     </a>
+
+    <?php if ($rol === 'comercio'): ?>
+    <a class="carrito-nav" id="boton-carrito" href="/carrito" data-abrir-carrito>
+        <span class="carrito-nav__icono">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="8.5" cy="20.5" r="1.6" fill="currentColor" stroke="none"></circle>
+                <circle cx="18.5" cy="20.5" r="1.6" fill="currentColor" stroke="none"></circle>
+                <path d="M2.5 3h2.2l2.5 11.6a1.9 1.9 0 0 0 1.9 1.5h8.6a1.9 1.9 0 0 0 1.85-1.45L21.5 7H5.4"></path>
+            </svg>
+            <span class="carrito-nav__globo" data-carrito-badge<?= $articulosCarrito > 0 ? '' : ' hidden' ?>><?= $articulosCarrito > 99 ? '99+' : (string) $articulosCarrito ?></span>
+        </span>
+        <span class="carrito-nav__texto">Mi carrito</span>
+    </a>
+    <?php endif; ?>
 
     <nav class="lateral__nav" aria-label="Principal"><?= $nav ?></nav>
 
@@ -450,20 +482,19 @@ $rutaActual = (string) ($_SERVER['REQUEST_URI'] ?? '');
 $enCarrito = str_starts_with($rutaActual, '/carrito');
 // En la caja el carrito flotante estorba: ahí se cobra, no se compra.
 $enCaja = str_starts_with($rutaActual, '/pos');
+// En el chat y en finanzas el botón flotante tapa contenido que no se aparta.
+$enConversacion = str_starts_with($rutaActual, '/mensajes');
+$enFinanzas = str_starts_with($rutaActual, '/finanzas');
 ?>
-<?php if ($usuario !== null && $rolActual === 'comercio' && !$enCarrito && !$enCaja): ?>
-    <?php $articulos = \App\Modules\Carrito\CarritoContador::paraUsuario((int) $usuario); ?>
-    <a class="fab-carrito" href="/carrito" aria-label="Ir al carrito<?= $articulos > 0 ? ' (' . $articulos . ' artículos)' : '' ?>">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="8.5" cy="20.5" r="1.6" fill="currentColor" stroke="none"></circle>
-            <circle cx="18.5" cy="20.5" r="1.6" fill="currentColor" stroke="none"></circle>
-            <path d="M2.5 3h2.2l2.5 11.6a1.9 1.9 0 0 0 1.9 1.5h8.6a1.9 1.9 0 0 0 1.85-1.45L21.5 7H5.4"></path>
-        </svg>
-        <?php if ($articulos > 0): ?>
-            <span class="fab-carrito__badge"><?= $articulos > 99 ? '99+' : $articulos ?></span>
-        <?php endif; ?>
-    </a>
+<?php if ($usuario !== null && $rolActual === 'comercio'): ?>
+<div class="cajon" id="cajon-carrito" data-cajon aria-hidden="true">
+    <div class="cajon__velo" data-cajon-cerrar></div>
+    <aside class="cajon__caja" role="dialog" aria-modal="true" aria-label="Mi carrito" tabindex="-1" data-cajon-caja>
+        <div class="cajon__contenido" data-cajon-contenido>
+            <div class="cajon__cargando">Cargando…</div>
+        </div>
+    </aside>
+</div>
 <?php endif; ?>
 <?php if (!empty($scripts)): ?>
     <script nonce="<?= $e($nonce) ?>"><?= $scripts ?></script>
@@ -568,6 +599,238 @@ document.querySelectorAll('dialog [data-cerrar]').forEach(function (boton) {
             navToggle.setAttribute('aria-expanded', abierto ? 'false' : 'true');
         });
     }
+})();
+</script>
+<script nonce="<?= $e($nonce ?? '') ?>">
+/* Las tablas de datos se pintan como tarjetas en móvil: cada celda necesita
+   el nombre de su columna. Se copia del <thead> para no repetirlo en 20 vistas. */
+(function () {
+    var tablas = document.querySelectorAll('main table:not(.tabla-recibo)');
+    for (var i = 0; i < tablas.length; i++) {
+        var ths = tablas[i].querySelectorAll('thead th');
+        if (!ths.length) continue;
+        var filas = tablas[i].querySelectorAll('tbody tr');
+        for (var f = 0; f < filas.length; f++) {
+            var celdas = filas[f].children;
+            for (var c = 0; c < celdas.length; c++) {
+                if (!celdas[c].hasAttribute('data-label') && ths[c]) {
+                    celdas[c].setAttribute('data-label', (ths[c].textContent || '').trim());
+                }
+            }
+        }
+    }
+})();
+</script>
+<script nonce="<?= $e($nonce ?? '') ?>">
+/* Carrito: cajón lateral, contadores, deshacer y "volar al carrito". */
+(function () {
+  'use strict';
+
+  /* ------------------------------------------------------------ toasts */
+  var toastEl = null, toastTimer = null;
+  function toast(texto, etiquetaAccion, accion) {
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl); }
+    toastEl.innerHTML = '';
+    var txt = document.createElement('span');
+    txt.textContent = texto;
+    toastEl.appendChild(txt);
+    if (etiquetaAccion && accion) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'toast__accion'; b.textContent = etiquetaAccion;
+      b.addEventListener('click', function () { ocultarToast(); accion(); });
+      toastEl.appendChild(b);
+    }
+    toastEl.classList.add('toast--visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(ocultarToast, 4000);
+  }
+  function ocultarToast() { if (toastEl) toastEl.classList.remove('toast--visible'); }
+
+  function globos(n) {
+    document.querySelectorAll('[data-carrito-badge]').forEach(function (b) {
+      b.textContent = n > 99 ? '99+' : String(n);
+      b.hidden = !(n > 0);
+    });
+  }
+
+  function brinco() {
+    document.querySelectorAll('[data-abrir-carrito]').forEach(function (b) {
+      b.classList.remove('carrito-brinco');
+      void b.offsetWidth;
+      b.classList.add('carrito-brinco');
+    });
+  }
+
+  window.aresToast = toast;
+
+  /* ------------------------------------------------------------ cajón */
+  var cajon = document.querySelector('[data-cajon]');
+  if (cajon) {
+    var caja = cajon.querySelector('[data-cajon-caja]');
+    var contenido = cajon.querySelector('[data-cajon-contenido]');
+    var listo = false;
+
+    var csrf = function () {
+      var i = contenido.querySelector('input[name="_csrf"]');
+      var fd = new FormData();
+      fd.append('_csrf', i ? i.value : '');
+      fd.append('ajax', '1');
+      return fd;
+    };
+
+    var pintar = function (html) { contenido.innerHTML = html; };
+
+    var cargar = function (forzar) {
+      if (listo && !forzar) return;
+      fetch('/carrito/panel', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } })
+        .then(function (r) { return r.ok ? r.text() : null; })
+        .then(function (html) { if (html !== null) { pintar(html); listo = true; } });
+    };
+
+    var abrir = function () {
+      cajon.classList.add('cajon--abierto');
+      cajon.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('sin-scroll');
+      cargar(false);
+      setTimeout(function () { caja.focus(); }, 30);
+    };
+    var cerrar = function () {
+      cajon.classList.remove('cajon--abierto');
+      cajon.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('sin-scroll');
+    };
+    window.aresAbrirCarrito = abrir;
+
+    var enviar = function (url, fd) {
+      return fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          if (res.ok && res.d.ok) { pintar(res.d.panel); globos(res.d.contador); return res.d; }
+          toast((res.d && res.d.mensaje) || 'No se pudo actualizar el carrito.');
+          return null;
+        })
+        .catch(function () { toast('Sin conexión. Intenta de nuevo.'); return null; });
+    };
+
+    var quitar = function (uuid, nombre, cantidad) {
+      var fd = csrf();
+      fd.append('producto', uuid);
+      enviar('/carrito/quitar', fd).then(function (res) {
+        if (!res) return;
+        toast(nombre + ' eliminado', 'Deshacer', function () {
+          var f2 = csrf();
+          f2.append('producto', uuid);
+          f2.append('cantidad', String(cantidad || 1));
+          enviar('/carrito/agregar', f2).then(function (r2) { if (r2) toast('Producto restaurado'); });
+        });
+      });
+    };
+
+    document.addEventListener('click', function (e) {
+      var abre = e.target.closest('[data-abrir-carrito]');
+      if (abre) { e.preventDefault(); abrir(); return; }
+      if (e.target.closest('[data-cajon-cerrar]') && !e.target.closest('.cajon__caja form')) { cerrar(); return; }
+      var paso = e.target.closest('[data-paso]');
+      if (paso) {
+        var actual = parseInt(paso.dataset.cantidad, 10) || 1;
+        var max = parseInt(paso.dataset.max, 10) || 999;
+        var nueva = actual + parseInt(paso.dataset.paso, 10);
+        if (nueva < 1) { quitar(paso.dataset.uuid, paso.dataset.nombre, actual); return; }
+        if (nueva > max) { toast('No hay más existencias.'); return; }
+        var fd = csrf();
+        fd.append('producto', paso.dataset.uuid);
+        fd.append('cantidad', String(nueva));
+        enviar('/carrito/actualizar', fd);
+        return;
+      }
+      var vaciar = e.target.closest('.cajon__vaciar');
+      if (vaciar) { e.preventDefault(); enviar('/carrito/vaciar', csrf()); }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && cajon.classList.contains('cajon--abierto')) cerrar();
+    });
+
+    // Al volver con el botón "atrás" desde /checkout el panel se recarga.
+    window.aresRecargarCarrito = function () { cargar(true); };
+  }
+
+  /* --------------------------------------------------- volar al carrito */
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest('form[action="/carrito/agregar"]');
+    if (!form) return;
+    e.preventDefault();
+
+    var boton = e.submitter || form.querySelector('.btn-agregar') || form.querySelector('button[type="submit"]');
+    var destino = document.querySelector('#boton-carrito') || document.querySelector('[data-abrir-carrito]');
+    if (!boton || !destino) { form.submit(); return; }
+
+    var cantidad = parseInt((form.querySelector('input[name="cantidad"]') || {}).value, 10) || 1;
+
+    // El globo se pinta como "último valor del servidor + unidades en vuelo":
+    // si la respuesta llega antes que la animación no se cuenta dos veces.
+    var base = parseInt((destino.querySelector('[data-carrito-badge]') || {}).textContent, 10) || 0;
+    var pendientes = 0;
+    var respondido = false;
+    var aplicado = false;
+
+    var pintarGlobo = function () { globos(Math.max(0, base + pendientes)); };
+
+    var a = boton.getBoundingClientRect();
+    var b = destino.getBoundingClientRect();
+    var x0 = a.left + a.width / 2, y0 = a.top + a.height / 2;
+    var x1 = b.left + b.width / 2, y1 = b.top + b.height / 2;
+    var xm = (x0 + x1) / 2, ym = Math.min(y0, y1) - 90;
+
+    var p = document.createElement('div');
+    p.className = 'vuelo';
+    p.textContent = '+' + cantidad;
+    document.body.appendChild(p);
+
+    var anim = p.animate([
+      { transform: 'translate(' + x0 + 'px,' + y0 + 'px) translate(-50%,-50%) scale(.85)', opacity: .95 },
+      { transform: 'translate(' + xm + 'px,' + ym + 'px) translate(-50%,-50%) scale(1.1)', offset: .55, opacity: 1 },
+      { transform: 'translate(' + x1 + 'px,' + y1 + 'px) translate(-50%,-50%) scale(.5)', opacity: .85 }
+    ], { duration: 380, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' });
+
+    anim.onfinish = function () {
+      p.remove();
+      aplicado = true;
+      if (!respondido) { pendientes += cantidad; }
+      pintarGlobo();
+      brinco();
+    };
+
+    var fd = new FormData(form);
+    fd.append('ajax', '1');
+    fetch('/carrito/agregar', { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        respondido = true;
+
+        if (!d || !d.ok) {
+          if (aplicado) { pendientes = Math.max(0, pendientes - cantidad); }
+          pintarGlobo();
+          toast((d && d.mensaje) || 'No se pudo agregar el producto.');
+          return;
+        }
+
+        base = parseInt(d.contador, 10) || 0;
+        if (aplicado) { pendientes = Math.max(0, pendientes - cantidad); }
+        pintarGlobo();
+
+        if (d.panel && document.querySelector('[data-cajon]')) {
+          var cont = document.querySelector('[data-cajon-contenido]');
+          if (cont) cont.innerHTML = d.panel;
+        }
+      })
+      .catch(function () {
+        respondido = true;
+        if (aplicado) { pendientes = Math.max(0, pendientes - cantidad); }
+        pintarGlobo();
+        toast('Sin conexión. El producto no se agregó.');
+      });
+  });
 })();
 </script>
 </body>

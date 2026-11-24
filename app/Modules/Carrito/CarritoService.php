@@ -46,11 +46,20 @@ final class CarritoService
             return ['ok' => false, 'mensaje' => $e->getMessage()];
         }
 
-        if ($cantidad > (int) $producto['stock_disponible']) {
-            return ['ok' => false, 'mensaje' => 'Solo hay ' . (int) $producto['stock_disponible'] . ' disponibles.'];
+        $carrito = $this->repo->carritoDe($comercioId);
+        $disponible = (int) $producto['stock_disponible'];
+        $yaEnCarrito = $this->repo->cantidadDe((int) $carrito['id'], (int) $producto['id']);
+
+        // El stock se compara contra el total que quedaría en el carrito, no
+        // contra la cantidad de este clic.
+        if ($yaEnCarrito + $cantidad > $disponible) {
+            $mensaje = $yaEnCarrito > 0
+                ? 'Ya tienes ' . $yaEnCarrito . ' en el carrito y solo hay ' . $disponible . '. Ajusta la cantidad.'
+                : 'Solo hay ' . $disponible . ' disponibles.';
+
+            return ['ok' => false, 'mensaje' => $mensaje];
         }
 
-        $carrito = $this->repo->carritoDe($comercioId);
         $this->repo->agregar((int) $carrito['id'], (int) $producto['id'], $cantidad);
 
         return ['ok' => true, 'mensaje' => 'Producto agregado al carrito.'];
@@ -78,6 +87,17 @@ final class CarritoService
 
         $carrito = $this->repo->carritoDe($comercioId);
         $this->repo->quitar((int) $carrito['id'], (int) $producto['id']);
+    }
+
+    /** Saca del carrito solo los productos que ya se convirtieron en pedido. */
+    public function quitarProductos(int $comercioId, array $productoIds): void
+    {
+        if ($productoIds === []) {
+            return;
+        }
+
+        $carrito = $this->repo->carritoDe($comercioId);
+        $this->repo->quitarProductos((int) $carrito['id'], $productoIds);
     }
 
     public function vaciar(int $comercioId): void
@@ -114,6 +134,7 @@ final class CarritoService
                     'subtotal'      => 0.0,
                     'iva'           => 0.0,
                     'total'         => 0.0,
+                    'bloqueado'     => false,
                 ];
             }
 
@@ -128,6 +149,10 @@ final class CarritoService
 
             if ($inactivo) {
                 $problemas[] = $item['nombre'] . ': ya no está disponible.';
+            }
+
+            if ($agotado || $inactivo) {
+                $grupos[$mayoristaId]['bloqueado'] = true;
             }
 
             try {
@@ -146,6 +171,7 @@ final class CarritoService
             }
 
             $grupos[$mayoristaId]['items'][] = [
+                'producto_id'     => (int) $item['producto_id'],
                 'producto_uuid'   => $item['uuid'],
                 'nombre'          => $item['nombre'],
                 'cantidad'        => $cantidad,
@@ -171,6 +197,10 @@ final class CarritoService
         $subtotal = 0.0;
         $iva = 0.0;
         $total = 0.0;
+        $subtotalListo = 0.0;
+        $ivaListo = 0.0;
+        $totalListo = 0.0;
+        $listos = 0;
 
         foreach ($grupos as $id => $grupo) {
             $grupos[$id]['subtotal'] = $this->precios->redondear($grupo['subtotal']);
@@ -186,6 +216,17 @@ final class CarritoService
                 $problemas[] = $grupo['mayorista'] . ': faltan $' . number_format($faltante, 2) . ' para el pedido mínimo.';
             }
 
+            // Un grupo se puede pedir cuando alcanza su mínimo y no tiene
+            // artículos agotados o retirados.
+            $grupos[$id]['listo'] = $grupos[$id]['cumple_minimo'] && empty($grupos[$id]['bloqueado']);
+
+            if ($grupos[$id]['listo']) {
+                $listos++;
+                $subtotalListo += $grupo['subtotal'];
+                $ivaListo += $grupo['iva'];
+                $totalListo += $grupo['total'];
+            }
+
             $subtotal += $grupo['subtotal'];
             $iva += $grupo['iva'];
             $total += $grupo['total'];
@@ -196,7 +237,12 @@ final class CarritoService
             'subtotal'       => $this->precios->redondear($subtotal),
             'iva'            => $this->precios->redondear($iva),
             'total'          => $this->precios->redondear($total),
-            'puede_checkout' => $problemas === [] && $grupos !== [],
+            'puede_checkout' => $listos > 0,
+            'listos'         => $listos,
+            'total_grupos'   => count($grupos),
+            'subtotal_listo' => $this->precios->redondear($subtotalListo),
+            'iva_listo'      => $this->precios->redondear($ivaListo),
+            'total_listo'    => $this->precios->redondear($totalListo),
             'problemas'      => $problemas,
             'items'          => count($items),
         ];

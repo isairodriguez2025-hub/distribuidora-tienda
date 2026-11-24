@@ -10,8 +10,19 @@ foreach ($direcciones as $d) {
     $opciones .= '<option value="' . (int) $d['id'] . '">' . $e($d['calle']) . ', ' . $e((string) $d['colonia']) . ' · ' . $e($d['ciudad']) . '</option>';
 }
 
+// Solo se confirman los proveedores que alcanzaron su mínimo; el resto sigue
+// en el carrito.
+$listos = array_values(array_filter(
+    $resumen['grupos'],
+    static fn (array $g): bool => !empty($g['listo'])
+));
+$quedan = count($resumen['grupos']) - count($listos);
+$subtotalPago = (float) ($resumen['subtotal_listo'] ?? $resumen['subtotal']);
+$ivaPago = (float) ($resumen['iva_listo'] ?? $resumen['iva']);
+$totalPago = (float) ($resumen['total_listo'] ?? $resumen['total']);
+
 $resumenHtml = '';
-foreach ($resumen['grupos'] as $g) {
+foreach ($listos as $g) {
     $resumenHtml .= '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f2ec">'
         . '<span>' . $e($g['mayorista']) . ' <span style="color:#9ca3af;font-size:13px">(' . count($g['items']) . ' productos)</span></span>'
         . '<span style="font-variant-numeric:tabular-nums">$' . number_format((float) $g['total'], 2) . '</span></div>';
@@ -28,13 +39,18 @@ $contenido = '<h1>Confirmar pedido</h1>'
         ? '<p>No tienes direcciones guardadas. <a href="/perfil">Agrega una</a> para continuar.</p>'
         : '<label><span>Entregar en</span><select name="direccion_id" required>' . $opciones . '</select></label>')
     . '<h2>Resumen</h2>' . $resumenHtml
+    . ($quedan > 0
+        ? '<p class="checkout__nota">' . $quedan . ' proveedor' . ($quedan === 1 ? '' : 'es')
+          . ' aún no alcanza' . ($quedan === 1 ? '' : 'n') . ' su mínimo y se queda'
+          . ($quedan === 1 ? '' : 'n') . ' en tu carrito.</p>'
+        : '')
     . '<div style="display:flex;justify-content:space-between;margin-top:14px;font-size:13px;color:#6b7280">'
-    . '<span>Subtotal</span><span>$' . number_format((float) $resumen['subtotal'], 2) . '</span></div>'
+    . '<span>Subtotal</span><span>$' . number_format($subtotalPago, 2) . '</span></div>'
     . '<div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280">'
-    . '<span>IVA</span><span>$' . number_format((float) $resumen['iva'], 2) . '</span></div>'
+    . '<span>IVA</span><span>$' . number_format($ivaPago, 2) . '</span></div>'
     . '<div style="display:flex;justify-content:space-between;margin-top:10px;font-size:20px;font-weight:650">'
-    . '<span>Total</span><span>$' . number_format((float) $resumen['total'], 2) . '</span></div>'
-    . '<button type="submit" style="width:100%;margin-top:18px;height:46px"' . ($opciones === '' ? ' disabled' : '') . '>Confirmar pedido</button>'
+    . '<span>Total</span><span>$' . number_format($totalPago, 2) . '</span></div>'
+    . '<button type="submit" style="width:100%;margin-top:18px;height:46px"' . ($opciones === '' || $listos === [] ? ' disabled' : '') . '>Confirmar pedido</button>'
     . '<p style="font-size:12px;color:#9ca3af;margin:10px 0 0">Al confirmar se reserva el stock por 15 minutos.</p>'
     . '</form>'
     . '<div style="background:#fff;border:1px solid #e8e6df;border-radius:12px;padding:20px">'
