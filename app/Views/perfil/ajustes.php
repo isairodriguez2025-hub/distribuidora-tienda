@@ -1,6 +1,6 @@
 <?php
 /**
- * Ajustes: lo que antes vivía en "Más…" más la personalización de la app.
+ * Ajustes: legal, permisos del dispositivo, seguridad y personalización.
  *
  * @var callable $e
  * @var string   $csrf
@@ -12,14 +12,20 @@ $oscuro = $tema === 'oscuro';
 $contenido = '<div class="ajustes">'
     . '<a class="volver" href="/perfil">‹ Mi cuenta</a>'
     . '<h1>Ajustes</h1>'
+    . '<p class="pista" style="margin:-4px 0 14px"><a href="/perfil">Mi perfil</a></p>'
 
     . ($ok ? '<div class="aviso aviso--ok" role="status">Preferencias guardadas.</div>' : '')
 
-    . '<section class="cuenta__mas" aria-label="Legal y privacidad">'
-    . '<a class="fila-opcion" href="/perfil/privacidad">'
-    . '<span>Privacidad</span><span class="fila-opcion__flecha" aria-hidden="true">›</span></a>'
+    . '<section class="cuenta__mas" aria-label="Cuenta y dispositivo">'
+    . '<a class="fila-opcion" href="/perfil/seguridad">'
+    . '<span>Seguridad<span class="fila-opcion__pista">Contraseña y baja de la cuenta</span></span>'
+    . '<span class="fila-opcion__flecha" aria-hidden="true">›</span></a>'
+    . '<a class="fila-opcion" href="/perfil/permisos">'
+    . '<span>Permisos del dispositivo<span class="fila-opcion__pista">Cámara, ubicación, micrófono, notificaciones, fotos</span></span>'
+    . '<span class="fila-opcion__flecha" aria-hidden="true">›</span></a>'
     . '<a class="fila-opcion" href="/terminos">'
-    . '<span>Términos y condiciones</span><span class="fila-opcion__flecha" aria-hidden="true">›</span></a>'
+    . '<span>Términos y condiciones<span class="fila-opcion__pista">Uso del servicio y responsabilidades</span></span>'
+    . '<span class="fila-opcion__flecha" aria-hidden="true">›</span></a>'
     . '</section>'
 
     . '<section class="carta ajustes__grupo" style="margin-top:16px">'

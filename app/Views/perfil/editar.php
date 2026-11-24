@@ -1,6 +1,6 @@
 <?php
 /**
- * Editar cuenta: foto, nombre, correo, contraseña y dirección principal.
+ * Editar cuenta: foto, nombre, correo y dirección principal.
  *
  * @var callable $e
  * @var string   $csrf
@@ -68,27 +68,7 @@ $contenido = '<div class="editor">'
     . '</label>'
     . '</section>'
 
-    // -------------------------------------------------------- contraseña
-    . '<section class="carta editor__bloque">'
-    . '<h2>Contraseña</h2>'
-    . '<p class="pista" style="margin-top:-6px">Déjala en blanco si no quieres cambiarla.</p>'
-    . '<label class="campo"><span class="campo__etiqueta">Contraseña actual</span>'
-    . '<span class="campo__con-boton">'
-    . '<input class="campo__control" id="p_actual" type="password" name="password_actual" autocomplete="current-password" placeholder="La que usas hoy">'
-    . $ojo('p_actual') . '</span>' . $err('password_actual') . '</label>'
-    . '<div class="editor__doble">'
-    . '<label class="campo"><span class="campo__etiqueta">Nueva</span>'
-    . '<span class="campo__con-boton">'
-    . '<input class="campo__control" id="p_nueva" type="password" name="password_nueva" minlength="12" autocomplete="new-password" placeholder="Mínimo 12 caracteres" data-fuerza="medidor">'
-    . $ojo('p_nueva') . '</span>' . $err('password_nueva') . '</label>'
-    . '<label class="campo"><span class="campo__etiqueta">Repite la nueva</span>'
-    . '<span class="campo__con-boton">'
-    . '<input class="campo__control" id="p_rep" type="password" name="password_repetir" autocomplete="new-password" placeholder="Otra vez">'
-    . $ojo('p_rep') . '</span>' . $err('password_repetir') . '</label>'
-    . '</div>'
-    . '<span class="fuerza" id="medidor" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'
-    . '<span class="campo__pista" id="fuerza-texto">Al cambiarla se cierran las demás sesiones.</span>'
-    . '</section>'
+    . '<p class="pista" style="margin:0 0 16px">La contraseña y la baja de la cuenta se manejan en <a href="/perfil/seguridad">Ajustes › Seguridad</a>.</p>'
 
     // --------------------------------------------------------- dirección
     . '<section class="carta editor__bloque">'
@@ -109,8 +89,16 @@ $contenido = '<div class="editor">'
     . '<label class="campo"><span class="campo__etiqueta">Referencias</span>'
     . '<input class="campo__control" name="referencias" value="' . $e($v('referencias')) . '" placeholder="Portón negro"></label>'
     . '</div>'
-    . '<input type="hidden" name="latitud" value="' . $e($lat) . '">'
-    . '<input type="hidden" name="longitud" value="' . $e($lng) . '">'
+    . '<input type="hidden" name="latitud" id="latitud" value="' . $e($lat) . '">'
+    . '<input type="hidden" name="longitud" id="longitud" value="' . $e($lng) . '">'
+    . '<div class="campo-mapa">'
+    . '<button type="button" class="boton boton--claro" id="ubicar-mapa">'
+    . '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    . '<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"></path><circle cx="12" cy="10" r="2.6"></circle></svg>'
+    . 'Ubicar dirección en el mapa</button>'
+    . '<div id="mapa-direccion" class="mapa mapa--form" hidden></div>'
+    . '<p class="campo__pista">Toca el mapa o arrastra el marcador para ajustar el punto exacto de entrega.</p>'
+    . '</div>'
     . '</section>'
 
     . '<div class="editor__acciones">'
@@ -118,5 +106,41 @@ $contenido = '<div class="editor">'
     . '<button type="submit" class="boton">Guardar cambios</button>'
     . '</div>'
     . '</form></div>';
+
+$scripts = <<<'JS'
+(function () {
+  var boton = document.getElementById('ubicar-mapa');
+  var caja = document.getElementById('mapa-direccion');
+  var lat = document.getElementById('latitud');
+  var lng = document.getElementById('longitud');
+  if (!boton || !caja || !lat || !lng || typeof L === 'undefined') return;
+
+  var mapa = null, marcador = null;
+
+  function fijar(ll) {
+    lat.value = ll.lat.toFixed(6);
+    lng.value = ll.lng.toFixed(6);
+    if (marcador) marcador.setLatLng(ll);
+  }
+
+  boton.addEventListener('click', function () {
+    caja.hidden = false;
+    var inicio = [parseFloat(lat.value) || 19.4326, parseFloat(lng.value) || -99.1332];
+    if (!mapa) {
+      mapa = L.map('mapa-direccion').setView(inicio, 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap'
+      }).addTo(mapa);
+      marcador = L.marker(inicio, { draggable: true }).addTo(mapa);
+      marcador.on('dragend', function () { fijar(marcador.getLatLng()); });
+      mapa.on('click', function (e) { fijar(e.latlng); });
+    } else {
+      mapa.setView(inicio, 15);
+      marcador.setLatLng(inicio);
+    }
+    setTimeout(function () { mapa.invalidateSize(); }, 60);
+  });
+})();
+JS;
 
 require __DIR__ . '/../layout.php';

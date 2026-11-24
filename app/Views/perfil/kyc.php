@@ -31,6 +31,7 @@ $requeridos = $kyc['requeridos'] === []
     : '<p>Documentos obligatorios: <strong>' . $e(implode(', ', $kyc['requeridos'])) . '</strong></p>';
 
 $contenido = '<h1>Verificación de identidad</h1>'
+    . '<p class="pista" style="margin:-4px 0 14px"><a href="/perfil">Mi perfil</a></p>'
     . '<p>Sube tus documentos en JPG, PNG o PDF (máximo 10 MB cada uno).</p>'
     . $requeridos
     . ($mensaje !== null ? '<p style="background:#eaf1ec;border:1px solid #cfdcd3;padding:10px 12px;border-radius:8px">' . $e($mensaje) . '</p>' : '')

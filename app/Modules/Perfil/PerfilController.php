@@ -67,6 +67,7 @@ final class PerfilController
             'avatarUrl'   => AvatarService::url($id),
             'mensaje'     => null,
             'calificacion' => $this->repo->calificacion($id),
+            'desglose'     => $this->repo->desgloseCalificaciones($id),
         ]);
     }
 
@@ -340,6 +341,7 @@ final class PerfilController
             'tieneFoto'   => AvatarService::url($id) !== null,
             'latitud'     => $principal['latitud'] ?? '',
             'longitud'    => $principal['longitud'] ?? '',
+            'mapa'        => true,
         ], $estado);
     }
 
@@ -398,6 +400,48 @@ final class PerfilController
             'tema'   => $this->repo->tema($this->usuarioId()),
             'ok'     => $peticion->query('ok', '') !== '',
         ]);
+    }
+
+    /** GET /perfil/seguridad — contraseña y baja de la cuenta. */
+    public function seguridad(Request $peticion): Response
+    {
+        return $this->vista('perfil/seguridad', [
+            'titulo' => 'Seguridad',
+        ]);
+    }
+
+    /** POST /perfil/password — cambio de contraseña desde Ajustes › Seguridad. */
+    public function cambiarPassword(Request $peticion): Response
+    {
+        $id = $this->usuarioId();
+        $cuenta = $this->repo->cuenta($id);
+
+        $actual = (string) $peticion->input('password_actual', '');
+        $nueva = (string) $peticion->input('password_nueva', '');
+        $repetir = (string) $peticion->input('password_repetir', '');
+
+        if (!Password::verificar($actual, (string) ($cuenta['password_hash'] ?? ''))) {
+            return Response::redirect('/perfil/seguridad?error=actual');
+        }
+
+        if (mb_strlen($nueva) < Password::MINIMO) {
+            return Response::redirect('/perfil/seguridad?error=longitud');
+        }
+
+        if ($nueva !== $repetir) {
+            return Response::redirect('/perfil/seguridad?error=repetir');
+        }
+
+        $this->repo->cambiarPassword($id, Password::hash($nueva));
+        Csrf::regenerar();
+
+        return Response::redirect('/perfil/seguridad?ok=1');
+    }
+
+    /** GET /perfil/permisos — permisos del dispositivo. */
+    public function permisos(Request $peticion): Response
+    {
+        return $this->vista('perfil/permisos', ['titulo' => 'Permisos del dispositivo']);
     }
 
     /** POST /perfil/tema */

@@ -71,7 +71,7 @@ final class PerfilRepository
         // Se traen también los datos de la cuenta: la ficha de "Mi cuenta"
         // muestra el correo y el nombre aunque el perfil del rol esté vacío.
         $stmt = $this->pdo->prepare(
-            "SELECT p.*, u.email, u.telefono, u.nombre, u.avatar_ruta
+            "SELECT p.*, u.email, u.telefono, u.nombre, u.avatar_ruta, u.created_at AS cuenta_creada
                FROM {$tabla} p
                JOIN usuarios u ON u.id = p.usuario_id
               WHERE p.usuario_id = ?
@@ -324,6 +324,38 @@ final class PerfilRepository
             'promedio' => $total > 0 ? round((float) $fila['promedio'], 1) : null,
             'total'    => $total,
         ];
+    }
+
+    /**
+     * Desglose por estrellas y los últimos comentarios recibidos.
+     *
+     * @return array{porEstrella: array<int,int>, comentarios: array<int, array>}
+     */
+    public function desgloseCalificaciones(int $usuarioId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT puntaje, COUNT(*) AS total FROM calificaciones WHERE evaluado_id = ? GROUP BY puntaje'
+        );
+        $stmt->execute([$usuarioId]);
+        $porEstrella = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+        foreach ($stmt->fetchAll() as $fila) {
+            $porEstrella[(int) $fila['puntaje']] = (int) $fila['total'];
+        }
+
+        $stmt = $this->pdo->prepare(
+            "SELECT c.puntaje, c.comentario, c.created_at,
+                    COALESCE(cp.nombre_negocio, mp.nombre_comercial, u.nombre, u.email) AS autor
+               FROM calificaciones c
+               JOIN usuarios u ON u.id = c.evaluador_id
+               LEFT JOIN comercios_perfil cp ON cp.usuario_id = u.id
+               LEFT JOIN mayoristas_perfil mp ON mp.usuario_id = u.id
+              WHERE c.evaluado_id = ? AND c.comentario <> ''
+              ORDER BY c.created_at DESC
+              LIMIT 20"
+        );
+        $stmt->execute([$usuarioId]);
+
+        return ['porEstrella' => $porEstrella, 'comentarios' => $stmt->fetchAll()];
     }
 
     /** Roles que participan del mercado y por tanto pueden puntuar. */

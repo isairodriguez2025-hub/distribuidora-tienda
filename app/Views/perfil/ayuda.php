@@ -7,6 +7,7 @@
 $contenido = '<div class="ajustes">'
     . '<a class="volver" href="/perfil">‹ Mi cuenta</a>'
     . '<h1>Ayuda</h1>'
+    . '<p class="pista" style="margin:-4px 0 14px"><a href="/perfil">Mi perfil</a></p>'
     . '<p class="silencio">Estamos para resolverlo. La mayoría de los casos se
         contestan en menos de una hora en horario laboral.</p>'
 

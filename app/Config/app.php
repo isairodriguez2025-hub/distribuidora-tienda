@@ -176,6 +176,9 @@ $router->get('/perfil/privacidad', [$perfil, 'privacidad'], [$seguridad, new Aut
 $router->post('/perfil/privacidad', [$perfil, 'guardarPrivacidad'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/perfil/eliminar', [$perfil, 'eliminar'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/perfil/ajustes', [$perfil, 'ajustes'], [$seguridad, new AuthRequired()]);
+$router->get('/perfil/seguridad', [$perfil, 'seguridad'], [$seguridad, new AuthRequired()]);
+$router->post('/perfil/password', [$perfil, 'cambiarPassword'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
+$router->get('/perfil/permisos', [$perfil, 'permisos'], [$seguridad, new AuthRequired()]);
 $router->post('/perfil/tema', [$perfil, 'guardarTema'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->post('/perfil/notificaciones', [$perfil, 'notificaciones'], [$seguridad, new AuthRequired(), new CsrfProtect()]);
 $router->get('/ayuda', [$perfil, 'ayuda'], [$seguridad, new AuthRequired()]);
@@ -192,6 +195,7 @@ $soloMayorista = [$seguridad, new AuthRequired(), new RoleRequired(['mayorista']
 
 $router->get('/mayorista/productos', [$catalogo, 'index'], $soloMayorista);
 $router->get('/mayorista/productos/nuevo', [$catalogo, 'nuevoForm'], $soloMayorista);
+$router->get('/mayorista/productos/plantilla', [$catalogo, 'plantillaCsv'], $soloMayorista);
 $router->post('/mayorista/productos', [$catalogo, 'crear'], [...$soloMayorista, new CsrfProtect()]);
 $router->get('/mayorista/productos/{uuid:[0-9a-fA-F-]{36}}/editar', [$catalogo, 'editarForm'], $soloMayorista);
 $router->post('/mayorista/productos/{uuid:[0-9a-fA-F-]{36}}', [$catalogo, 'actualizar'], [...$soloMayorista, new CsrfProtect()]);
@@ -260,6 +264,7 @@ $pagosCtl = new PagoController($pagoService, $pasarela, $pdo, __DIR__ . '/../Vie
 $soloComercio = [$seguridad, new AuthRequired(), new RoleRequired(['comercio'])];
 
 $router->get('/carrito', [$carrito, 'ver'], $soloComercio);
+$router->get('/carrito/panel', [$carrito, 'panel'], $soloComercio);
 $router->post('/carrito/agregar', [$carrito, 'agregar'], [...$soloComercio, new CsrfProtect()]);
 $router->post('/carrito/actualizar', [$carrito, 'actualizar'], [...$soloComercio, new CsrfProtect()]);
 $router->post('/carrito/quitar', [$carrito, 'quitar'], [...$soloComercio, new CsrfProtect()]);
